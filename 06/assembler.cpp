@@ -142,7 +142,7 @@ public:
 class Code
 {
 public:
-  string dest(string &neh)
+  string dest(string neh)
   {
     if(neh == "")
     {
@@ -180,7 +180,7 @@ public:
     return "";
   }
 
-  string jump(string &neh)
+  string jump(string neh)
   {
     if(neh == "")
     {
@@ -217,7 +217,7 @@ public:
     return "";
   }
 
-  string comp(string &neh)
+  string comp(string neh)
   {
     if(neh == "0")
     {
@@ -353,15 +353,18 @@ string binary(string bin){
 
     ans = 16 - inst.length();
 
-    while(ans != inst.length())
+    int l = inst.length();
+
+    while(ans != 0)
     {
+
+
       inst = "0" + inst;
       ans--;
     }
 
     return inst;
 }
-
 
 
 int main(int argc,char* argv[])
@@ -375,14 +378,12 @@ int main(int argc,char* argv[])
     a.advance();
     if (a.commandType() == A_COMMAND || a.commandType() == L_COMMAND)
     {
-      outputfile << binary(a.symbol());
+      outputfile << binary(a.symbol()) << endl;
     }
     if (a.commandType() == C_COMMAND)
     {
       outputfile << 111 << converter.comp(a.comp()) << converter.dest(a.dest()) << converter.jump(a.jmp()) << endl;
     }
-
-
   }
   return 0;
 }
