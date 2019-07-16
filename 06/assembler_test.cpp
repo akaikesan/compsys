@@ -1,6 +1,5 @@
 #include <bits/stdc++.h>
 #include <fstream>
-#include <initializer_list>
 using namespace std;
 
 enum command {
@@ -341,40 +340,6 @@ public:
 };
 
 
-class SymbolTable
-{
-public:
-  map<string,int> v;
-
-
-
-  void addEntry(string &symbol, int &address)
-  {
-    v[symbol] = address;
-
-  }
-
-  bool contains(string &symbol)
-  {
-    auto iter = v.find("hoge");
-    if (iter != end(v))
-    {
-      return true;
-    }
-    else
-    {
-      return false;
-    }
-
-  }
-
-  int getAddress(string &symbol)
-  {
-    return v[symbol];
-  }
-};
-
-
 string binary(string bin){
     unsigned long int bina = stoi(bin);
     unsigned long int ans = 0;
@@ -407,24 +372,6 @@ int main(int argc,char* argv[])
   Parser a(argv[1]);
   Code converter;
   ofstream outputfile("Prog.hack");
-
-
-  int counter = 0;
-
-
-
-  while(!a.hasMoreCommands())
-  {
-    a.advance();
-    if (a.commandType() == A_COMMAND)
-    {
-
-    }
-    if(a.commandType() == L_COMMAND)
-    {
-
-    }
-  }
 
   while(!a.hasMoreCommands())
   {

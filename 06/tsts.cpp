@@ -2,11 +2,13 @@
 using namespace std;
 
 string binary(string bin){
-    int bina = stoi(bin);
-    int ans = 0;
+    unsigned long bina = stoul(bin);
+    cout << bina << endl;
+    unsigned long int ans = 0;
     for (int i = 0; bina>0 ; i++)
     {
         ans = ans+(bina%2)*pow(10,i);
+        cout << ans <<endl;
         bina = bina/2;
     }
 
@@ -32,7 +34,7 @@ string binary(string bin){
 int main()
 {
 
-  cout << binary("2");
+  cout << binary("16384");
 
   return 0;
 }
