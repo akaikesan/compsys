@@ -1,6 +1,9 @@
 #include <bits/stdc++.h>
 #include <fstream>
+#include <iostream>
 #include <initializer_list>
+#include <algorithm>
+#include <cctype>
 using namespace std;
 
 enum command {
@@ -45,11 +48,17 @@ public:
     regex reA(R"(@)");
     regex reL(R"(\(\w+\))");
     regex co(R"(//.*+)");//Commentout
+    regex space(R"(\s+)");
     if (regex_search(reading_line_buffer,co))
     {
       reading_line_buffer = regex_replace(reading_line_buffer,co,"");
     }
+    if(regex_search(reading_line_buffer,space))
+    {
+      reading_line_buffer = regex_replace(reading_line_buffer,space,"");
 
+
+    }
 
 
 
@@ -133,6 +142,12 @@ public:
       }
     }
     return "";
+  }
+
+  void to_the_first_line()
+  {
+    reading_file.clear();
+    reading_file.seekg(0,ios_base::beg);
   }
 
 
@@ -344,19 +359,39 @@ public:
 class SymbolTable
 {
 public:
-  map<string,int> v;
 
 
+  map<string,unsigned long int> v;
+  SymbolTable(){
+    for (int i=0;i<16;i++)
+    {
+      string s = 'R' + to_string(i);
+      v[s] = i;
+    }
 
-  void addEntry(string &symbol, int &address)
-  {
-    v[symbol] = address;
+    v["SCREEN"] = 16384;
+    v["KBD"] = 24576;
+    v["SP"] = 0;
+    v["LCL"] = 1;
+    v["ARG"] = 2;
+    v["THIS"] = 3;
+    v["THAT"] = 4;
 
   }
 
-  bool contains(string &symbol)
+
+
+
+  void addEntry(string symbol, int address)
   {
-    auto iter = v.find("hoge");
+
+      v[symbol] = address;
+  }
+
+  bool contains(string symbol)
+  {
+
+    auto iter = v.find(symbol);
     if (iter != end(v))
     {
       return true;
@@ -368,7 +403,7 @@ public:
 
   }
 
-  int getAddress(string &symbol)
+  int getAddress(string symbol)
   {
     return v[symbol];
   }
@@ -401,42 +436,116 @@ string binary(string bin){
     return inst;
 }
 
+string binary(int bina){
+    unsigned long int ans = 0;
+    for (int i = 0; bina>0 ; i++)
+    {
+        ans = ans+(bina%2)*pow(10,i);
+        bina = bina/2;
+    }
+
+    string inst = to_string(ans);
+
+    ans = 16 - inst.length();
+
+    int l = inst.length();
+
+    while(ans != 0)
+    {
+
+
+      inst = "0" + inst;
+      ans--;
+    }
+
+    return inst;
+}
+
 
 int main(int argc,char* argv[])
 {
-  Parser a(argv[1]);
+  Parser ps(argv[1]);
   Code converter;
   ofstream outputfile("Prog.hack");
+  SymbolTable st;
 
 
-  int counter = 0;
+  int counter = 1;
 
 
-
-  while(!a.hasMoreCommands())
+  while(!ps.hasMoreCommands())
   {
-    a.advance();
-    if (a.commandType() == A_COMMAND)
+    ps.advance();
+    if(ps.commandType() == L_COMMAND)
+    {
+      counter--;
+      st.addEntry(ps.symbol(),counter);
+    }
+    if(ps.commandType() != NO_COMMAND)
+    {
+      counter++;
+    }
+  }
+
+  ps.to_the_first_line();
+
+
+
+  int address = 16;
+
+
+
+  regex re(R"(\d+)");
+
+  while(!ps.hasMoreCommands())
+  {
+    ps.advance();
+    if (ps.commandType() == A_COMMAND)
     {
 
+      if(!st.contains(ps.symbol()))
+      {
+
+        if (regex_match(ps.symbol(),re))
+        {
+          st.v[ps.symbol()] = stoi(ps.symbol());
+
+        }
+        else
+        {
+          st.addEntry(ps.symbol(),address);
+          address++;
+
+        }
+
+      }
     }
-    if(a.commandType() == L_COMMAND)
+
+    counter++;
+  }
+
+
+
+  ps.to_the_first_line();
+
+
+  while(!ps.hasMoreCommands())
+  {
+    ps.advance();
+    if (ps.commandType() == A_COMMAND)
+
     {
+      outputfile << binary(st.getAddress(ps.symbol())) << endl;
+    }
+    if (ps.commandType() == C_COMMAND)
+    {
+
+      outputfile << 111 << converter.comp(ps.comp()) << converter.dest(ps.dest()) << converter.jump(ps.jmp()) << endl;
 
     }
   }
 
-  while(!a.hasMoreCommands())
-  {
-    a.advance();
-    if (a.commandType() == A_COMMAND || a.commandType() == L_COMMAND)
-    {
-      outputfile << binary(a.symbol()) << endl;
-    }
-    if (a.commandType() == C_COMMAND)
-    {
-      outputfile << 111 << converter.comp(a.comp()) << converter.dest(a.dest()) << converter.jump(a.jmp()) << endl;
-    }
-  }
+
+
   return 0;
 }
