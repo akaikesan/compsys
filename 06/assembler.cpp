@@ -19,10 +19,6 @@ private:
 
 public:
 
-
-
-
-
   Parser(string file){
 
     reading_file.open(file,ios::in);
@@ -56,8 +52,6 @@ public:
     if(regex_search(reading_line_buffer,space))
     {
       reading_line_buffer = regex_replace(reading_line_buffer,space,"");
-
-
     }
 
 
@@ -287,7 +281,7 @@ public:
     {
       return "0110010";
     }
-    else if(neh == "D+A")
+    else if(neh == "D+A" || neh == "A+D")
     {
       return "0000010";
     }
@@ -299,11 +293,11 @@ public:
     {
       return "0000111";
     }
-    else if(neh == "D&A")
+    else if(neh == "D&A" || neh == "A&D")
     {
       return "0000000";
     }
-    else if(neh=="D|A")
+    else if(neh== "D|A" || neh == "A|D")
     {
       return "0010101";
     }
@@ -319,7 +313,7 @@ public:
     {
       return "1110011";
     }
-    else if (neh == "M+1")
+    else if (neh == "M+1" || neh == "1+M")
     {
       return "1110111";
     }
@@ -327,7 +321,7 @@ public:
     {
       return "1110010";
     }
-    else if(neh == "D+M")
+    else if(neh == "D+M" || neh == "M+D")
     {
       return "1000010";
     }
@@ -339,11 +333,11 @@ public:
     {
       return "1000111";
     }
-    else if(neh == "D&M")
+    else if(neh == "D&M" || neh == "M&D")
     {
       return "1000000";
     }
-    else if (neh == "D|M")
+    else if (neh == "D|M" || neh == "M|D")
     {
       return "1010101";
     }
@@ -508,7 +502,7 @@ int main(int argc,char* argv[])
 
         if (regex_match(ps.symbol(),re))
         {
-          st.v[ps.symbol()] = stoi(ps.symbol());
+          st.v[ps.symbol()] = stoi(ps.symbol());//最適なコードではないことは筆者はわかっている。
 
         }
         else
