@@ -336,7 +336,6 @@ public:
     << "@SP" << std::endl
     << "M=D" << std::endl;
     writeCall("Sys.init",0);
-
   }
 
   void writeLabel(std::string label){
@@ -506,9 +505,10 @@ public:
     outputfile
     << "//Function" << std::endl
     << "(" << functionName << ")" << std::endl;
+    outputfile
+    << "@SP" <<std::endl;
     for(int i=0;i<numLocals;i++)
     outputfile
-    << "@SP" <<std::endl
     << "A=M" << std::endl
     << "M=0" << std::endl
     << "@SP" << std::endl

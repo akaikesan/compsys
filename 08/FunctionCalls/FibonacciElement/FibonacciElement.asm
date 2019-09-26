@@ -2,6 +2,7 @@
 D=A
 @SP
 M=D
+//CALL
 @Sys.init_RETURN_0
 D=A
 @SP
@@ -50,8 +51,10 @@ M=D
 @Sys.init
 0;JMP
 (Sys.init_RETURN_0)
+//Function
 (Sys.init)
 @SP
+//PUSH
 @4
 D=A
 @SP
@@ -59,6 +62,7 @@ A=M
 M=D
 @SP
 M=M+1
+//CALL
 @Main.fibonacci_RETURN_1
 D=A
 @SP
@@ -107,11 +111,15 @@ M=D
 @Main.fibonacci
 0;JMP
 (Main.fibonacci_RETURN_1)
+//LABEL
 (WHILE)
+//GOTO
 @WHILE
 0;JMP
+//Function
 (Main.fibonacci)
 @SP
+//PUSH
 @ARG
 D=M
 @0
@@ -122,6 +130,7 @@ A=M
 M=D
 @SP
 M=M+1
+//PUSH
 @2
 D=A
 @SP
@@ -149,11 +158,19 @@ A=M
 A=A-1
 M=-1
 (P1)
+//IF
+@SP
+M=M-1
+A=M
+D=M
 @IF_TRUE
-0;JMP
+D;JNE
+//GOTO
 @IF_FALSE
 0;JMP
+//LABEL
 (IF_TRUE)
+//PUSH
 @ARG
 D=M
 @0
@@ -164,6 +181,7 @@ A=M
 M=D
 @SP
 M=M+1
+//RETURN
 @LCL
 D=M
 @R13
@@ -174,9 +192,10 @@ D=M
 D=D-A
 A=D
 D=M
-@14
+@R14
 M=D
 @SP
+M=M-1
 A=M
 D=M
 @ARG
@@ -212,8 +231,11 @@ D=M
 @LCL
 M=D
 @R14
+A=M
 0;JMP
+//LABEL
 (IF_FALSE)
+//PUSH
 @ARG
 D=M
 @0
@@ -224,6 +246,7 @@ A=M
 M=D
 @SP
 M=M+1
+//PUSH
 @2
 D=A
 @SP
@@ -237,6 +260,7 @@ A=M
 D=M
 A=A-1
 M=M-D
+//CALL
 @Main.fibonacci_RETURN_2
 D=A
 @SP
@@ -285,6 +309,7 @@ M=D
 @Main.fibonacci
 0;JMP
 (Main.fibonacci_RETURN_2)
+//PUSH
 @ARG
 D=M
 @0
@@ -295,6 +320,7 @@ A=M
 M=D
 @SP
 M=M+1
+//PUSH
 @1
 D=A
 @SP
@@ -308,6 +334,7 @@ A=M
 D=M
 A=A-1
 M=M-D
+//CALL
 @Main.fibonacci_RETURN_3
 D=A
 @SP
@@ -362,6 +389,7 @@ A=M
 D=M
 A=A-1
 M=M+D
+//RETURN
 @LCL
 D=M
 @R13
@@ -372,9 +400,10 @@ D=M
 D=D-A
 A=D
 D=M
-@14
+@R14
 M=D
 @SP
+M=M-1
 A=M
 D=M
 @ARG
@@ -410,4 +439,5 @@ D=M
 @LCL
 M=D
 @R14
+A=M
 0;JMP

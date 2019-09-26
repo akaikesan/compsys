@@ -1,3 +1,4 @@
+//Function
 (SimpleFunction.test)
 @SP
 A=M
@@ -8,6 +9,7 @@ A=M
 M=0
 @SP
 M=M+1
+//PUSH
 @LCL
 D=M
 @0
@@ -18,6 +20,7 @@ A=M
 M=D
 @SP
 M=M+1
+//PUSH
 @LCL
 D=M
 @1
@@ -38,6 +41,7 @@ M=M+D
 A=M
 A=A-1
 M=!M
+//PUSH
 @ARG
 D=M
 @0
@@ -54,6 +58,7 @@ A=M
 D=M
 A=A-1
 M=M+D
+//PUSH
 @ARG
 D=M
 @1
@@ -70,6 +75,7 @@ A=M
 D=M
 A=A-1
 M=M-D
+//RETURN
 @LCL
 D=M
 @R13
@@ -80,9 +86,10 @@ D=M
 D=D-A
 A=D
 D=M
-@14
+@R14
 M=D
 @SP
+M=M-1
 A=M
 D=M
 @ARG
@@ -118,4 +125,5 @@ D=M
 @LCL
 M=D
 @R14
+A=M
 0;JMP
