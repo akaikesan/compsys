@@ -125,7 +125,8 @@ private:
   int lctr = 0;
   int rtnc = 0;
   std::ofstream outputfile;
-
+  std::string clsname;
+  int scnt = 0;//static counter
 
 public:
 
@@ -146,6 +147,12 @@ public:
   void setFileName(std::string fn){
     outputfile.open(fn,std::ios::out | std::ios::ate);
   }
+
+  void getFileName(std::string fn){
+    clsname = fn;
+  }
+
+
 
   void writeArithmetic(std::string op){
 
@@ -249,10 +256,25 @@ public:
           << "@ARG" << std::endl
           << "D=M" <<std::endl;
         }
-        else{
+        else if(segment == "temp" || segment == "pointer"){
           outputfile
           << "@" << mp[segment] << std::endl
           << "D=A" << std::endl;
+        }
+        else if(segment == "static"){
+          outputfile
+          << "@" << mp[segment] << std::endl
+          << "D=A" << std::endl;
+          std::stringstream ss;
+          ss << index;
+          std::string str = ss.str(); // "3.14"
+          if(mp.count(clsname + "_STATIC_" + str) == 0){
+            mp[clsname + "_STATIC_" + str] = scnt;
+            scnt++;
+          }
+
+          index = mp[clsname + "_STATIC_" + str];
+
         }
         outputfile
         << "@" << index << std::endl
@@ -300,10 +322,25 @@ public:
           << "@ARG" << std::endl
           << "D=M" <<std::endl;
         }
-        else{
+        else if(segment == "temp" || segment == "pointer"){
           outputfile
           << "@" << mp[segment] << std::endl
           << "D=A" << std::endl;
+        }
+        else if(segment == "static"){
+          outputfile
+          << "@" << mp[segment] << std::endl
+          << "D=A" << std::endl;
+          std::stringstream ss;
+          ss << index;
+          std::string str = ss.str(); // "3.14"
+          if(mp.count(clsname + "_STATIC_" + str) == 0){
+            mp[clsname + "_STATIC_" + str] = scnt;
+            scnt++;
+          }
+
+          index = mp[clsname + "_STATIC_" + str];
+
         }
         outputfile
         << "@" << index << std::endl
@@ -544,6 +581,7 @@ int main(int argc,char *argv[])
 
     Parser psr(files[i]);
 
+    cw.getFileName(files[i]);
 
 
     while(!psr.hasMoreCommands())
@@ -573,5 +611,10 @@ int main(int argc,char *argv[])
       }
     }
   }
+  for(auto itr = cw.mp.begin(); itr != cw.mp.end(); ++itr) {
+        std::cout << "key = " << itr->first           // キーを表示
+                        << ", val = " << itr->second << "\n";    // 値を表示
+    }
+
   return 0;
 }
