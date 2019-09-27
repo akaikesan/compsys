@@ -42,7 +42,7 @@ public:
     regex reC(R"(\w+=.*+)");
     regex reCj(R"(\w+;\w+)");
     regex reA(R"(@)");
-    regex reL(R"(\(\w+\))");
+    regex reL(R"(\([\w.:$]+\))");
     regex co(R"(//.*+)");//Commentout
     regex space(R"(\s+)");
     if (regex_search(reading_line_buffer,co))
@@ -82,7 +82,7 @@ public:
 
   string symbol()
   {
-    regex re(R"(\w+)");
+    regex re(R"([\w:.$]+)");
     smatch results;
     if(commandType() == A_COMMAND || commandType() == L_COMMAND)
     {
@@ -465,6 +465,7 @@ int main(int argc,char* argv[])
 
 
   int counter = 1;
+//  int real_counter=1;
 
 
   while(!ps.hasMoreCommands())
@@ -472,14 +473,19 @@ int main(int argc,char* argv[])
     ps.advance();
     if(ps.commandType() == L_COMMAND)
     {
+      //real_counter++;
       counter--;
       st.addEntry(ps.symbol(),counter);
     }
     if(ps.commandType() != NO_COMMAND)
     {
+      //real_counter++;
       counter++;
     }
+
   }
+
+  //cout << counter << endl;
 
   ps.to_the_first_line();
 
@@ -538,6 +544,16 @@ int main(int argc,char* argv[])
 
     }
   }
+
+
+  for (auto itr = st.v.begin(); itr != st.v.end(); itr++)
+  {
+   // キーを出力
+    cout << itr->first << endl;
+    // 値を出力
+   cout << itr->second << endl;
+ }
+
 
 
 
