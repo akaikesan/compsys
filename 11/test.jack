@@ -1,0 +1,13 @@
+class Main
+{
+  field int go,you;
+  static string he,li,kk;
+
+  method int yay (int i,string k)
+  {
+    var string i,e;
+    var int op,uy;
+    do init.end(yay(i));
+    return i;
+  }
+}
