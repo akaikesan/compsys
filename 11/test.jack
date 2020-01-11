@@ -5,9 +5,16 @@ class Main
 
   method int yay (int i,string k)
   {
-    var string i,e;
+    var string i;
     var int op,uy;
+    let go = 7;
     do init.end(yay(i));
     return i;
+  }
+  constructor void sub(int i,string k){
+    var int yahoo;
+    var string google; 
+    let i = 0;
+    return;
   }
 }

@@ -317,6 +317,8 @@ public:
 
   void startSubroutine()
   {
+    argCounter = 0;
+    varCounter = 0;
     subroutineSymbolTable.clear();
   }
 
@@ -341,7 +343,7 @@ public:
       varCounter++;
     }
 
-    classSymbolTable.push_back(SymbolRow(name,type,kind,varCount(kind)));
+    classSymbolTable.push_back(SymbolRow(name,type,kind,varCount(kind) - 1));
 
   }
 
@@ -527,10 +529,10 @@ private:
 
   std::string className;
 
-
-public:
   std::vector<std::string> middlebracketStack;
   std::vector<std::string> semicolonStack;
+
+public:
 
 
 
@@ -565,7 +567,7 @@ public:
 
 
 
-  void compileClass(JackTokenizer *tokenizer,SymbolTable &symbolTable)
+  void compileClass(JackTokenizer *tokenizer,SymbolTable &symbolTable,VMwriter &vmwriter)
   {
     outputfile << indent << "<class>" << std::endl;
 
@@ -576,7 +578,6 @@ public:
 
     className = tokenizer->content();
 
-    std::cout << className << std::endl;
 
     for(int i=0;i<2;i++)
     {
@@ -590,7 +591,7 @@ public:
     {
       if(tokenizer->keyword() == STATIC || tokenizer->keyword() == FIELD) compileclassVarDec(tokenizer,symbolTable);
 
-      else if(tokenizer->keyword() == CONSTRUCTOR || tokenizer->keyword() == FUNCTION || tokenizer->keyword() ==METHOD) compileSubroutine(tokenizer,&symbolTable);
+      else if(tokenizer->keyword() == CONSTRUCTOR || tokenizer->keyword() == FUNCTION || tokenizer->keyword() ==METHOD) compileSubroutine(tokenizer,&symbolTable,vmwriter);
 
       else
       {
@@ -610,20 +611,24 @@ public:
 
 
 
-  void compileSubroutine(JackTokenizer *tokenizer,SymbolTable *symbolTable,VMwriter *vmwriter)
+  void compileSubroutine(JackTokenizer *tokenizer,SymbolTable *symbolTable,VMwriter &vmwriter)
   {
     outputfile << indent << "<subroutineDec>" << std::endl;
     increaseIndent();
+    std::string subType;
+    std::string methodName;
 
-
-
+    subType = tokenizer->content();
     for(int i=0;i<4;i++)
     {
       outputfile << indent << tokenizer->readbuffer() << std::endl;
       tokenizer->advance();
-      if(tokenizer->tokenType() == IDENTIFIER) methodName = tokenizer->content(); 
+      if(tokenizer->tokenType() == IDENTIFIER) methodName = tokenizer->content();
     }
-
+    if(subType == "method")
+    {
+      symbolTable->define("this",className,ARG_K);
+    }
 
 
 
@@ -642,13 +647,23 @@ public:
     tokenizer->advance();
 
 
-
+    bool Var_is_uncompiled = true;
 
     while(tokenizer->tokenType() != SYMBOL)
     {
-      if(tokenizer->keyword() == VAR) compileVarDec(tokenizer,symbolTable);
-
-      else if(tokenizer->keyword() == LET || tokenizer->keyword() == IF || tokenizer->keyword() == WHILE || tokenizer->keyword() ==DO || tokenizer->keyword() ==RETURN) compileStatements(tokenizer,symbolTable);
+      if(tokenizer->keyword() == VAR){ compileVarDec(tokenizer,symbolTable);}
+      else if(Var_is_uncompiled){
+        if(subType == "method"){
+          vmwriter.writeFunction(className + "." + methodName,symbolTable->varCount(VAR_K));
+        }
+        else vmwriter.writeFunction(className + "." + methodName,symbolTable->varCount(VAR_K));
+        Var_is_uncompiled = false;
+      }
+      else if(tokenizer->keyword() == LET
+      || tokenizer->keyword() == IF
+      || tokenizer->keyword() == WHILE
+      || tokenizer->keyword() ==DO
+      || tokenizer->keyword() ==RETURN) compileStatements(tokenizer,symbolTable,vmwriter);
 
       else{
         std::cout << "Syntaxerror! wrong definition in SubroutineBody" << std::endl;
@@ -664,12 +679,13 @@ public:
     outputfile << indent << tokenizer->readbuffer() << std::endl;//output "}"
     tokenizer->advance();
 
-    vmwriter.wrieFunction()
+    vmwriter.writeReturn();
     decreaseIndent();
     outputfile << indent << "</subroutineBody>" << std::endl;
     decreaseIndent();
     outputfile << indent << "</subroutineDec>" << std::endl;
 
+    symbolTable->startSubroutine();
 
 
 
@@ -681,7 +697,7 @@ public:
 
 
 
-  void compileStatements(JackTokenizer *tokenizer,SymbolTable *symbolTable)
+  void compileStatements(JackTokenizer *tokenizer,SymbolTable *symbolTable,VMwriter &vmwriter)
   {
     outputfile << indent << "<statements>" << std::endl;
     increaseIndent();
@@ -692,15 +708,15 @@ public:
       switch (tokenizer->keyword())
       {
         case LET:
-          compileLet(tokenizer,symbolTable);break;
+          compileLet(tokenizer,symbolTable,vmwriter);break;
         case DO:
           compileDo(tokenizer,symbolTable);break;
         case WHILE:
-          compileWhile(tokenizer,symbolTable);break;
+          compileWhile(tokenizer,symbolTable,vmwriter);break;
         case RETURN:
           compileReturn(tokenizer,symbolTable);break;
         case IF:
-          compileIf(tokenizer,symbolTable);break;
+          compileIf(tokenizer,symbolTable,vmwriter);break;
         default:
           line_is_statement = false;
 
@@ -716,15 +732,21 @@ public:
 
 
 
-  void compileLet(JackTokenizer *tokenizer,SymbolTable *symbolTable)
+  void compileLet(JackTokenizer *tokenizer,SymbolTable *symbolTable,VMwriter &vmwriter)
   {
     outputfile << indent << "<letStatement>" << std::endl;
     increaseIndent();
+    std::string identifier;
     for(int i=0;i<2;i++)
     {
       outputfile << indent << tokenizer->readbuffer() << std::endl;
+      if(tokenizer->tokenType() == IDENTIFIER)  identifier = tokenizer->content();
       tokenizer->advance();
     }
+
+
+
+
     if(std::regex_search(tokenizer->readbuffer(),std::regex(R"(\[)")))
     {
       outputfile << indent << tokenizer->readbuffer() << std::endl;//output "["
@@ -733,6 +755,10 @@ public:
       outputfile << indent << tokenizer->readbuffer() << std::endl;//output "]"
       tokenizer->advance();
     }
+
+
+
+
     outputfile << indent << tokenizer->readbuffer() << std::endl;//output "="
     tokenizer->advance();
 
@@ -743,6 +769,24 @@ public:
     decreaseIndent();
     outputfile << indent << "</letStatement>" << std::endl;
 
+
+
+
+
+    std::string segment;
+    if(symbolTable->kindOf(identifier) == FIELD_K) {
+      vmwriter.writepush("pointer",0);
+      vmwriter.writepush("constant",symbolTable->indexOf(identifier));
+      vmwriter.writeArithmetic(ADD);
+      vmwriter.writepop("pointer",1); //make that have address of field named by identifier.
+      vmwriter.writepop("that",0);  //you change the data of the address "that" segment has.
+    }
+
+    if(symbolTable->kindOf(identifier) == VAR_K) segment = "local";
+    if(symbolTable->kindOf(identifier) == ARG_K) segment = "argument";
+    if(symbolTable->kindOf(identifier) == STATIC_K) segment = "static";
+
+    vmwriter.writepop(segment,symbolTable->indexOf(identifier));
 
   }
 
@@ -793,7 +837,7 @@ public:
 
 
 
-  void compileWhile(JackTokenizer *tokenizer,SymbolTable *symbolTable)
+  void compileWhile(JackTokenizer *tokenizer,SymbolTable *symbolTable,VMwriter &vmwriter)
   {
     outputfile << indent << "<whileStatement>" << std::endl;
     increaseIndent();
@@ -810,7 +854,7 @@ public:
       tokenizer->advance();
     }
 
-    compileStatements(tokenizer,symbolTable);
+    compileStatements(tokenizer,symbolTable,vmwriter);
 
     outputfile << indent << tokenizer->readbuffer() << std::endl;//output "}"
     tokenizer->advance();
@@ -826,7 +870,7 @@ public:
 
 
 
-  void compileIf(JackTokenizer *tokenizer,SymbolTable *symbolTable)
+  void compileIf(JackTokenizer *tokenizer,SymbolTable *symbolTable,VMwriter &vmwriter)
   {
     outputfile << indent << "<ifStatement>" << std::endl;
     increaseIndent();
@@ -845,7 +889,7 @@ public:
       tokenizer->advance();
     }
 
-    compileStatements(tokenizer,symbolTable);//statements
+    compileStatements(tokenizer,symbolTable,vmwriter);//statements
 
     outputfile << indent << tokenizer->readbuffer() << std::endl;//output "}"
     tokenizer->advance();
@@ -858,7 +902,7 @@ public:
         tokenizer->advance();
       }
 
-      compileStatements(tokenizer,symbolTable);
+      compileStatements(tokenizer,symbolTable,vmwriter);
 
       outputfile << indent << tokenizer->readbuffer() << std::endl;//output "}"
       tokenizer->advance();
@@ -1179,20 +1223,20 @@ int main(int argc,char* argv[])
   JackTokenizer tokenizer(argv[1]);
   CompilationEngine ce;
   SymbolTable symbolTable;
-
+  VMwriter vmwriter;
 
   while(tokenizer.hasMoreTokens())
   {
     tokenizer.advance();
     if(tokenizer.tokenType() == KEYWORD){
-      if(tokenizer.keyword() == CLASS) ce.compileClass(&tokenizer,symbolTable);
+      if(tokenizer.keyword() == CLASS) ce.compileClass(&tokenizer,symbolTable,vmwriter);
     }
 
   }
-
+/*
   std::vector<SymbolRow> table = symbolTable.getclassSymbolTable();
 
   for(auto v:table) std::cout << v.getname() << "," << v.gettype() << "," << v.getkind() << "," << v.getindexNumber() << std::endl;
-
+*/
   return 0;
 }

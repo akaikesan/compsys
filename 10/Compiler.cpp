@@ -565,7 +565,7 @@ public:
 
 
 
-  void compileClass(JackTokenizer *tokenizer,SymbolTable &symbolTable)
+  void compileClass(JackTokenizer *tokenizer,SymbolTable &symbolTable,VMwriter &vmwriter)
   {
     outputfile << indent << "<class>" << std::endl;
 
@@ -590,7 +590,7 @@ public:
     {
       if(tokenizer->keyword() == STATIC || tokenizer->keyword() == FIELD) compileclassVarDec(tokenizer,symbolTable);
 
-      else if(tokenizer->keyword() == CONSTRUCTOR || tokenizer->keyword() == FUNCTION || tokenizer->keyword() ==METHOD) compileSubroutine(tokenizer,&symbolTable);
+      else if(tokenizer->keyword() == CONSTRUCTOR || tokenizer->keyword() == FUNCTION || tokenizer->keyword() ==METHOD) compileSubroutine(tokenizer,&symbolTable,vmwriter);
 
       else
       {
@@ -610,18 +610,18 @@ public:
 
 
 
-  void compileSubroutine(JackTokenizer *tokenizer,SymbolTable *symbolTable,VMwriter *vmwriter)
+  void compileSubroutine(JackTokenizer *tokenizer,SymbolTable *symbolTable,VMwriter &vmwriter)
   {
     outputfile << indent << "<subroutineDec>" << std::endl;
     increaseIndent();
-
+    std::string methodName;
 
 
     for(int i=0;i<4;i++)
     {
       outputfile << indent << tokenizer->readbuffer() << std::endl;
       tokenizer->advance();
-      if(tokenizer->tokenType() == IDENTIFIER) methodName = tokenizer->content(); 
+      if(tokenizer->tokenType() == IDENTIFIER) methodName = tokenizer->content();
     }
 
 
@@ -646,9 +646,12 @@ public:
 
     while(tokenizer->tokenType() != SYMBOL)
     {
-      if(tokenizer->keyword() == VAR) compileVarDec(tokenizer,symbolTable);
-
-      else if(tokenizer->keyword() == LET || tokenizer->keyword() == IF || tokenizer->keyword() == WHILE || tokenizer->keyword() ==DO || tokenizer->keyword() ==RETURN) compileStatements(tokenizer,symbolTable);
+      if(tokenizer->keyword() == VAR) compileVarDec(tokenizer,symbolTable);vmwriter.writeFunction(className + "." + methodName,symbolTable->varCount(VAR_K));
+      else if(tokenizer->keyword() == LET
+      || tokenizer->keyword() == IF
+      || tokenizer->keyword() == WHILE
+      || tokenizer->keyword() ==DO
+      || tokenizer->keyword() ==RETURN) compileStatements(tokenizer,symbolTable);
 
       else{
         std::cout << "Syntaxerror! wrong definition in SubroutineBody" << std::endl;
@@ -664,7 +667,7 @@ public:
     outputfile << indent << tokenizer->readbuffer() << std::endl;//output "}"
     tokenizer->advance();
 
-    vmwriter.wrieFunction()
+    vmwriter.writeReturn();
     decreaseIndent();
     outputfile << indent << "</subroutineBody>" << std::endl;
     decreaseIndent();
@@ -1179,13 +1182,13 @@ int main(int argc,char* argv[])
   JackTokenizer tokenizer(argv[1]);
   CompilationEngine ce;
   SymbolTable symbolTable;
-
+  VMwriter vmwriter;
 
   while(tokenizer.hasMoreTokens())
   {
     tokenizer.advance();
     if(tokenizer.tokenType() == KEYWORD){
-      if(tokenizer.keyword() == CLASS) ce.compileClass(&tokenizer,symbolTable);
+      if(tokenizer.keyword() == CLASS) ce.compileClass(&tokenizer,symbolTable,vmwriter);
     }
 
   }

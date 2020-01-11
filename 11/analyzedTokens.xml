@@ -39,8 +39,6 @@
         <keyword>var</keyword>
         <identifier>string</identifier>
         <identifier>i</identifier>
-        <symbol>,</symbol>
-        <identifier>e</identifier>
         <symbol>;</symbol>
       </varDec>
       <varDec>
@@ -52,6 +50,17 @@
         <symbol>;</symbol>
       </varDec>
       <statements>
+        <letStatement>
+          <keyword>let</keyword>
+          <identifier>go</identifier>
+          <symbol>=</symbol>
+          <expression>
+            <term>
+              <integerConstant>7</integerConstant>
+            </term>
+          </expression>
+          <symbol>;</symbol>
+        </letStatement>
         <doStatement>
           <keyword>do</keyword>
           <identifier>init</identifier>
@@ -84,6 +93,53 @@
               <identifier>i</identifier>
             </term>
           </expression>
+          <symbol>;</symbol>
+        </returnStatement>
+      </statements>
+      <symbol>}</symbol>
+    </subroutineBody>
+  </subroutineDec>
+  <subroutineDec>
+    <keyword>constructor</keyword>
+    <keyword>void</keyword>
+    <identifier>sub</identifier>
+    <symbol>(</symbol>
+    <parameterList>
+      <keyword>int</keyword>
+      <identifier>i</identifier>
+      <symbol>,</symbol>
+      <identifier>string</identifier>
+      <identifier>k</identifier>
+    </parameterList>
+    <symbol>)</symbol>
+    <subroutineBody>
+      <symbol>{</symbol>
+      <varDec>
+        <keyword>var</keyword>
+        <keyword>int</keyword>
+        <identifier>yahoo</identifier>
+        <symbol>;</symbol>
+      </varDec>
+      <varDec>
+        <keyword>var</keyword>
+        <identifier>string</identifier>
+        <identifier>google</identifier>
+        <symbol>;</symbol>
+      </varDec>
+      <statements>
+        <letStatement>
+          <keyword>let</keyword>
+          <identifier>i</identifier>
+          <symbol>=</symbol>
+          <expression>
+            <term>
+              <integerConstant>0</integerConstant>
+            </term>
+          </expression>
+          <symbol>;</symbol>
+        </letStatement>
+        <returnStatement>
+          <keyword>return</keyword>
           <symbol>;</symbol>
         </returnStatement>
       </statements>
