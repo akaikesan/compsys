@@ -4,20 +4,8 @@
   <symbol>{</symbol>
   <classVarDec>
     <keyword>field</keyword>
-    <keyword>int</keyword>
-    <identifier>go</identifier>
-    <symbol>,</symbol>
-    <identifier>you</identifier>
-    <symbol>;</symbol>
-  </classVarDec>
-  <classVarDec>
-    <keyword>static</keyword>
     <identifier>string</identifier>
-    <identifier>he</identifier>
-    <symbol>,</symbol>
-    <identifier>li</identifier>
-    <symbol>,</symbol>
-    <identifier>kk</identifier>
+    <identifier>a</identifier>
     <symbol>;</symbol>
   </classVarDec>
   <subroutineDec>
@@ -26,122 +14,33 @@
     <identifier>yay</identifier>
     <symbol>(</symbol>
     <parameterList>
-      <keyword>int</keyword>
-      <identifier>i</identifier>
-      <symbol>,</symbol>
-      <identifier>string</identifier>
-      <identifier>k</identifier>
     </parameterList>
     <symbol>)</symbol>
     <subroutineBody>
       <symbol>{</symbol>
-      <varDec>
-        <keyword>var</keyword>
-        <identifier>string</identifier>
-        <identifier>i</identifier>
-        <symbol>;</symbol>
-      </varDec>
-      <varDec>
-        <keyword>var</keyword>
-        <keyword>int</keyword>
-        <identifier>op</identifier>
-        <symbol>,</symbol>
-        <identifier>uy</identifier>
-        <symbol>;</symbol>
-      </varDec>
       <statements>
         <letStatement>
           <keyword>let</keyword>
-          <identifier>go</identifier>
+          <identifier>a</identifier>
           <symbol>=</symbol>
           <expression>
             <term>
-              <integerConstant>7</integerConstant>
+              <identifier>String</identifier>
+              <symbol>.</symbol>
+              <identifier>new</identifier>
+              <symbol>(</symbol>
+              <expressionList>
+                <expression>
+                  <term>
+                    <integerConstant>2</integerConstant>
+                  </term>
+                </expression>
+              </expressionList>
+              <symbol>)</symbol>
             </term>
           </expression>
           <symbol>;</symbol>
         </letStatement>
-        <doStatement>
-          <keyword>do</keyword>
-          <identifier>init</identifier>
-          <symbol>.</symbol>
-          <identifier>end</identifier>
-          <symbol>(</symbol>
-          <expressionList>
-            <expression>
-              <term>
-                <identifier>yay</identifier>
-                <symbol>(</symbol>
-                <expressionList>
-                  <expression>
-                    <term>
-                      <identifier>i</identifier>
-                    </term>
-                  </expression>
-                </expressionList>
-                <symbol>)</symbol>
-              </term>
-            </expression>
-          </expressionList>
-          <symbol>)</symbol>
-          <symbol>;</symbol>
-        </doStatement>
-        <returnStatement>
-          <keyword>return</keyword>
-          <expression>
-            <term>
-              <identifier>i</identifier>
-            </term>
-          </expression>
-          <symbol>;</symbol>
-        </returnStatement>
-      </statements>
-      <symbol>}</symbol>
-    </subroutineBody>
-  </subroutineDec>
-  <subroutineDec>
-    <keyword>constructor</keyword>
-    <keyword>void</keyword>
-    <identifier>sub</identifier>
-    <symbol>(</symbol>
-    <parameterList>
-      <keyword>int</keyword>
-      <identifier>i</identifier>
-      <symbol>,</symbol>
-      <identifier>string</identifier>
-      <identifier>k</identifier>
-    </parameterList>
-    <symbol>)</symbol>
-    <subroutineBody>
-      <symbol>{</symbol>
-      <varDec>
-        <keyword>var</keyword>
-        <keyword>int</keyword>
-        <identifier>yahoo</identifier>
-        <symbol>;</symbol>
-      </varDec>
-      <varDec>
-        <keyword>var</keyword>
-        <identifier>string</identifier>
-        <identifier>google</identifier>
-        <symbol>;</symbol>
-      </varDec>
-      <statements>
-        <letStatement>
-          <keyword>let</keyword>
-          <identifier>i</identifier>
-          <symbol>=</symbol>
-          <expression>
-            <term>
-              <integerConstant>0</integerConstant>
-            </term>
-          </expression>
-          <symbol>;</symbol>
-        </letStatement>
-        <returnStatement>
-          <keyword>return</keyword>
-          <symbol>;</symbol>
-        </returnStatement>
       </statements>
       <symbol>}</symbol>
     </subroutineBody>

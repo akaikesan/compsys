@@ -1,11 +1,8 @@
-function Main.yay 3
+function Main.yay 0
 push pointer 0
 push constant 0
 add
 pop pointer 1
+//terminal
+push constant 2
 pop that 0
-pop  0
-return
-function Main.sub 2
-pop argument 1
-return

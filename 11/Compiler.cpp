@@ -203,7 +203,7 @@ public:
     std::regex symToken(R"(<symbol>)");
     std::regex idToken(R"(<identifier>)");
     std::regex intToken(R"(<integerConstant>)");
-    std::regex strToken(R"(<stirngConstant>)");
+    std::regex strToken(R"(<stringConstant>)");
 
 
     if(std::regex_search(reading_line_buffer,kwToken)) return KEYWORD;
@@ -466,17 +466,12 @@ class VMwriter
 private:
   std::ofstream outputVMfile;
 public:
-  VMwriter()
-  {
-    outputVMfile.open("compiled.vm",std::ios::out | std::ios::ate);
-  }
+  VMwriter(){outputVMfile.open("compiled.vm",std::ios::out | std::ios::ate);}
 
-  void writepush(std::string segment,int index){
-    outputVMfile << "push " << segment << " " << index << std::endl;}
+  void writepush(std::string segment,int index){outputVMfile << "push " << segment << " " << index << std::endl;}
 
 
-  void writepop(std::string segment,int index){
-    outputVMfile << "pop " << segment << " " << index << std::endl;}
+  void writepop(std::string segment,int index){outputVMfile << "pop " << segment << " " << index << std::endl;}
 
   void writeArithmetic(Command c){
     if(c == ADD) outputVMfile << "add" << std::endl;
@@ -491,29 +486,19 @@ public:
   }
 
 
-  void writeLabel(std::string label){
-    outputVMfile << "label " << label << std::endl;
-  }
+  void writeLabel(std::string label){outputVMfile << "label " << label << std::endl;}
 
-  void writeGoto(std::string label){
-    outputVMfile << "goto " << label << std::endl;
-  }
+  void writeGoto(std::string label){outputVMfile << "goto " << label << std::endl;}
 
-  void writeIf(std::string label){
-    outputVMfile << "if-goto " << label << std::endl;
-  }
+  void writeIf(std::string label){outputVMfile << "if-goto " << label << std::endl;}
 
-  void writeCall(std::string name,int nArgs){
-    outputVMfile << "call " << name << " " << nArgs << std::endl;
-  }
+  void writeCall(std::string name,int nArgs){outputVMfile << "call " << name << " " << nArgs << std::endl;}
 
-  void writeFunction(std::string name,int nLocals){
-    outputVMfile << "function " << name << " " << nLocals << std::endl;
-  }
+  void writeFunction(std::string name,int nLocals){outputVMfile << "function " << name << " " << nLocals << std::endl;}
 
-  void writeReturn(){
-    outputVMfile << "return" << std::endl;
-  }
+  void writeReturn(){outputVMfile << "return" << std::endl;}
+
+  void writeComment(std::string s){outputVMfile << "//" << s << std::endl;}
 
   void close(){outputVMfile.close();}
 };
@@ -532,6 +517,11 @@ private:
   std::vector<std::string> middlebracketStack;
   std::vector<std::string> semicolonStack;
 
+  void writeAdvance(JackTokenizer *tokenizer){
+    outputfile << indent << tokenizer->readbuffer() << std::endl;
+    tokenizer->advance();
+  }
+
 public:
 
 
@@ -539,19 +529,16 @@ public:
 
 
 
-  CompilationEngine()
-  {
+  CompilationEngine(){
     outputfile.open("analyzedTokens.xml",std::ios::out | std::ios::ate);
   }
 
-  void increaseIndent()
-  {
+  void increaseIndent(){
     indentcounter++;
     indent += "  ";
   }
 
-  void decreaseIndent()
-  {
+  void decreaseIndent(){
     indentcounter--;
     indent = "";
     for(int i=0;i<indentcounter;i++) indent += "  ";
@@ -567,23 +554,19 @@ public:
 
 
 
-  void compileClass(JackTokenizer *tokenizer,SymbolTable &symbolTable,VMwriter &vmwriter)
-  {
+  void compileClass(JackTokenizer *tokenizer,SymbolTable &symbolTable,VMwriter &vmwriter) {
     outputfile << indent << "<class>" << std::endl;
 
     increaseIndent();
 
-    outputfile << indent << tokenizer->readbuffer() << std::endl;//output "class"
-    tokenizer->advance();
+    writeAdvance(tokenizer);//output "class"
 
     className = tokenizer->content();
 
 
-    for(int i=0;i<2;i++)
-    {
-      outputfile << indent << tokenizer->readbuffer() << std::endl;//output className
-      tokenizer->advance();                                        //output {
-    }
+    for(int i=0;i<2;i++) writeAdvance(tokenizer); //output className
+                                                  //output {
+
 
 
 
@@ -611,8 +594,8 @@ public:
 
 
 
-  void compileSubroutine(JackTokenizer *tokenizer,SymbolTable *symbolTable,VMwriter &vmwriter)
-  {
+  void compileSubroutine(JackTokenizer *tokenizer,SymbolTable *symbolTable,VMwriter &vmwriter){
+
     outputfile << indent << "<subroutineDec>" << std::endl;
     increaseIndent();
     std::string subType;
@@ -679,7 +662,6 @@ public:
     outputfile << indent << tokenizer->readbuffer() << std::endl;//output "}"
     tokenizer->advance();
 
-    vmwriter.writeReturn();
     decreaseIndent();
     outputfile << indent << "</subroutineBody>" << std::endl;
     decreaseIndent();
@@ -697,8 +679,7 @@ public:
 
 
 
-  void compileStatements(JackTokenizer *tokenizer,SymbolTable *symbolTable,VMwriter &vmwriter)
-  {
+  void compileStatements(JackTokenizer *tokenizer,SymbolTable *symbolTable,VMwriter &vmwriter){
     outputfile << indent << "<statements>" << std::endl;
     increaseIndent();
     bool line_is_statement = true;
@@ -710,11 +691,11 @@ public:
         case LET:
           compileLet(tokenizer,symbolTable,vmwriter);break;
         case DO:
-          compileDo(tokenizer,symbolTable);break;
+          compileDo(tokenizer,symbolTable,vmwriter);break;
         case WHILE:
           compileWhile(tokenizer,symbolTable,vmwriter);break;
         case RETURN:
-          compileReturn(tokenizer,symbolTable);break;
+          compileReturn(tokenizer,symbolTable,vmwriter);break;
         case IF:
           compileIf(tokenizer,symbolTable,vmwriter);break;
         default:
@@ -746,88 +727,96 @@ public:
 
 
 
-
+    bool is_array = false;
     if(std::regex_search(tokenizer->readbuffer(),std::regex(R"(\[)")))
     {
-      outputfile << indent << tokenizer->readbuffer() << std::endl;//output "["
-      tokenizer->advance();
-      compileExpression(tokenizer,symbolTable);
-      outputfile << indent << tokenizer->readbuffer() << std::endl;//output "]"
-      tokenizer->advance();
+      is_array = true;
+      writeAdvance(tokenizer);//output "["
+      compileExpression(tokenizer,symbolTable,vmwriter);
+      writeAdvance(tokenizer);//output "]"
+
     }
-
-
-
-
-    outputfile << indent << tokenizer->readbuffer() << std::endl;//output "="
-    tokenizer->advance();
-
-    compileExpression(tokenizer,symbolTable);
-
-    outputfile << indent << tokenizer->readbuffer() << std::endl;//output ";"
-    tokenizer->advance();
-    decreaseIndent();
-    outputfile << indent << "</letStatement>" << std::endl;
-
-
-
-
-
     std::string segment;
+
+
+
     if(symbolTable->kindOf(identifier) == FIELD_K) {
       vmwriter.writepush("pointer",0);
       vmwriter.writepush("constant",symbolTable->indexOf(identifier));
       vmwriter.writeArithmetic(ADD);
-      vmwriter.writepop("pointer",1); //make that have address of field named by identifier.
-      vmwriter.writepop("that",0);  //you change the data of the address "that" segment has.
+      if(is_array) vmwriter.writeArithmetic(ADD);
+      vmwriter.writepop("pointer",1);
+
+    }else{
+
+
+      if(symbolTable->kindOf(identifier) == VAR_K) segment = "local";
+      else if(symbolTable->kindOf(identifier) == ARG_K) segment = "argument";
+      else if(symbolTable->kindOf(identifier) == STATIC_K) segment = "static";
+      if(is_array){
+        vmwriter.writepush(segment,symbolTable->indexOf(identifier));
+        vmwriter.writeArithmetic(ADD);
+        vmwriter.writepop("pointer",0);
+      }
     }
 
-    if(symbolTable->kindOf(identifier) == VAR_K) segment = "local";
-    if(symbolTable->kindOf(identifier) == ARG_K) segment = "argument";
-    if(symbolTable->kindOf(identifier) == STATIC_K) segment = "static";
 
-    vmwriter.writepop(segment,symbolTable->indexOf(identifier));
+
+
+
+
+
+
+
+    writeAdvance(tokenizer);//output "="
+
+    compileExpression(tokenizer,symbolTable,vmwriter);
+
+    writeAdvance(tokenizer);//output ";"
+
+    decreaseIndent();
+    outputfile << indent << "</letStatement>" << std::endl;
+
+
+    if(symbolTable->kindOf(identifier) == FIELD_K) vmwriter.writepop("that",0);
+    else if(is_array) vmwriter.writepop("that",0);
+    else vmwriter.writepop(segment,symbolTable->indexOf(identifier));
+    return;
 
   }
 
 
 
 
-  void compileDo(JackTokenizer *tokenizer,SymbolTable *symbolTable)
+  void compileDo(JackTokenizer *tokenizer,SymbolTable *symbolTable,VMwriter &vmwriter)
   {
     outputfile << indent << "<doStatement>" << std::endl;
     increaseIndent();
     for(int i=0;i<2;i++)
     {
-      outputfile << indent << tokenizer->readbuffer() << std::endl;
-      tokenizer->advance();
+      writeAdvance(tokenizer);
     }
 
     if(std::regex_search(tokenizer->readbuffer(),std::regex(R"(\.)")))
     {
       for(int i=0;i<3;i++)
       {
-        outputfile << indent << tokenizer->readbuffer() << std::endl;//output .subroutinName(
-        tokenizer->advance();
+        writeAdvance(tokenizer);//output .subroutinName(
       }
-      compileExpressionList(tokenizer,symbolTable);
+      compileExpressionList(tokenizer,symbolTable,vmwriter);
 
-      outputfile << indent << tokenizer->readbuffer() << std::endl;//output )
-      tokenizer->advance();
+      writeAdvance(tokenizer);//output )
     }
     else if(std::regex_search(tokenizer->readbuffer(),std::regex(R"(\()"))){
 
-      outputfile << indent << tokenizer->readbuffer() << std::endl;//output (
-      tokenizer->advance();
+      writeAdvance(tokenizer);//output (
 
-      compileExpressionList(tokenizer,symbolTable);
+      compileExpressionList(tokenizer,symbolTable,vmwriter);
 
-      outputfile << indent << tokenizer->readbuffer() << std::endl; //output )
-      tokenizer->advance();
+      writeAdvance(tokenizer);//output )
     }
 
-    outputfile << indent << tokenizer->readbuffer() << std::endl; //output ;
-    tokenizer->advance();
+    writeAdvance(tokenizer); //output ;
 
     decreaseIndent();
     outputfile << indent << "</doStatement>" << std::endl;
@@ -846,7 +835,7 @@ public:
       outputfile << indent << tokenizer->readbuffer() << std::endl;//output "("
       tokenizer->advance();
     }
-    compileExpression(tokenizer,symbolTable);
+    compileExpression(tokenizer,symbolTable,vmwriter);
 
     for(int i=0;i<2;i++)
     {
@@ -881,7 +870,7 @@ public:
       tokenizer->advance();
     }
 
-    compileExpression(tokenizer,symbolTable);//expressions
+    compileExpression(tokenizer,symbolTable,vmwriter);//expressions
 
     for(int i=0;i<2;i++)
     {
@@ -917,52 +906,86 @@ public:
   }
 
 
-  void compileReturn(JackTokenizer *tokenizer,SymbolTable *symbolTable)
+  void compileReturn(JackTokenizer *tokenizer,SymbolTable *symbolTable,VMwriter &vmwriter)
   {
     outputfile << indent << "<returnStatement>" << std::endl;
     increaseIndent();
 
-    outputfile << indent << tokenizer->readbuffer() << std::endl;//output "return"
-    tokenizer->advance();
-    if(tokenizer->readbuffer() != "<symbol>;</symbol>")
-    {
-      compileExpression(tokenizer,symbolTable);
-    }
+    writeAdvance(tokenizer);//output "return"
 
-    outputfile << indent << tokenizer->readbuffer() << std::endl;//output ";"
-    tokenizer->advance();
+    if(tokenizer->readbuffer() != "<symbol>;</symbol>") compileExpression(tokenizer,symbolTable,vmwriter);
+
+    writeAdvance(tokenizer);//output ";"
 
     decreaseIndent();
     outputfile << indent << "</returnStatement>" << std::endl;
 
+    vmwriter.writeReturn();
+
+    return;
   }
 
 
 
-  void compileExpression(JackTokenizer *tokenizer,SymbolTable *symbolTable)
+  void compileExpression(JackTokenizer *tokenizer,SymbolTable *symbolTable,VMwriter &vmwriter)
   {
 
+    std::vector<Command> symbol;
     outputfile << indent << "<expression>" << std::endl;
     increaseIndent();
-    compileTerm(tokenizer,symbolTable);
+    if(tokenizer->symbol() == "-"){
+      symbol.push_back(NEG);
+    }
+    else if(tokenizer->symbol() == "~") {
+      symbol.push_back(NOT);
+    }
+
+    compileTerm(tokenizer,symbolTable,vmwriter);
+
+
+    std::string symboltemp;
 
     while(tokenizer->tokenType() == SYMBOL)
     {
       if(std::regex_search(tokenizer->symbol(),opRegex))
       {
-        std::string symboltemp = tokenizer->symbol();
+        symboltemp = tokenizer->symbol();
         if(symboltemp == "<") symboltemp = "&lt;";
         else if(symboltemp == ">") symboltemp = "&gt;";
         else if(symboltemp == "&") symboltemp = "&amp;";
         outputfile << indent << "<symbol>" << symboltemp << "</symbol>" << std::endl;
         tokenizer->advance();
-        compileTerm(tokenizer,symbolTable);
+        compileTerm(tokenizer,symbolTable,vmwriter);
+
+
+        if(symboltemp == "+") symbol.push_back(ADD);
+        else if(symboltemp == "-") symbol.push_back(SUB);
+        else if(symboltemp == "=") symbol.push_back(EQ);
+        else if(symboltemp == "&lt") symbol.push_back(LT);
+        else if(symboltemp == "&gt") symbol.push_back(GT);
+        else if(symboltemp == "&amp") symbol.push_back(AND);
+        else if(symboltemp == "|") symbol.push_back(OR);
+        else if(symboltemp == "-") symbol.push_back(NEG);
+        else if(symboltemp == "~") symbol.push_back(NOT);
+        else if(symboltemp == "*") vmwriter.writeCall("Math.multiply",2);
+        else if(symboltemp == "/") vmwriter.writeCall("Math.divide",2);
+
+
       }
       else break;
     }
+
+
+
+
+    while(!symbol.empty()){
+      Command c = symbol.back();
+      symbol.pop_back();
+      vmwriter.writeArithmetic(c);
+    }
+
     decreaseIndent();
     outputfile << indent << "</expression>" << std::endl;
-
   }
 
 
@@ -1030,8 +1053,7 @@ public:
 
 
 
-  void compileVarDec(JackTokenizer *tokenizer,SymbolTable *symbolTable)
-  {
+  void compileVarDec(JackTokenizer *tokenizer,SymbolTable *symbolTable){
     outputfile << indent << "<varDec>" << std::endl;
     increaseIndent();
 
@@ -1071,8 +1093,7 @@ public:
 
 
 
-  void compileclassVarDec(JackTokenizer *tokenizer,SymbolTable &symbolTable)
-  {
+  void compileclassVarDec(JackTokenizer *tokenizer,SymbolTable &symbolTable){
     outputfile << indent << "<classVarDec>" << std::endl;
     increaseIndent();
 
@@ -1116,17 +1137,19 @@ public:
 
 
 
-  void compileExpressionList(JackTokenizer *tokenizer,SymbolTable *symbolTable)
-  {
+  void compileExpressionList(JackTokenizer *tokenizer,SymbolTable *symbolTable,VMwriter &vmwriter){
     outputfile << indent << "<expressionList>" << std::endl;
+
     increaseIndent();
+
     while (!std::regex_search(tokenizer->readbuffer(),std::regex(R"(\))")))
     {
-      compileExpression(tokenizer,symbolTable);
+      compileExpression(tokenizer,symbolTable,vmwriter);
       if(std::regex_search(tokenizer->readbuffer(),std::regex(R"(,)"))){
         outputfile << indent << tokenizer->readbuffer() << std::endl;
         tokenizer->advance();
       }
+
     }
     decreaseIndent();
     outputfile << indent << "</expressionList>" << std::endl;
@@ -1134,75 +1157,173 @@ public:
 
 
 
-  void compileTerm(JackTokenizer *tokenizer,SymbolTable *symbolTable)
-  {
+
+
+  void compileTerm(JackTokenizer *tokenizer,SymbolTable *symbolTable,VMwriter &vmwriter){
 
     outputfile << indent << "<term>" << std::endl;
     increaseIndent();
 
+
     if(std::regex_search(tokenizer->readbuffer(),std::regex(R"(\()")) )
     {
 
-      outputfile << indent << tokenizer->readbuffer() << std::endl;//output "["
-      tokenizer->advance();
-      compileExpression(tokenizer,symbolTable);
-      outputfile << indent << tokenizer->readbuffer() << std::endl;//output "]"
-      tokenizer->advance();
+
+
+
+
+      writeAdvance(tokenizer);//output "("
+
+
+      compileExpression(tokenizer,symbolTable,vmwriter);
+
+
+      writeAdvance(tokenizer);//output ")"
 
       decreaseIndent();
       outputfile << indent << "</term>" << std::endl;
-      return;
 
+
+      return;
     }
     else if(std::regex_search(tokenizer->readbuffer(),std::regex(R"(-)")) || std::regex_search(tokenizer->readbuffer(),std::regex(R"(~)")))
     {
 
-      outputfile << indent << tokenizer->readbuffer() << std::endl;
-      tokenizer->advance();
+      writeAdvance(tokenizer);
 
-      compileTerm(tokenizer,symbolTable);
+      compileTerm(tokenizer,symbolTable,vmwriter);
 
       decreaseIndent();
       outputfile << indent << "</term>" << std::endl;
+
+
+
       return;
+
+
 
     }
 
-    else outputfile << indent << tokenizer->readbuffer() << std::endl;
+
+    else {
+      outputfile << indent << tokenizer->readbuffer() << std::endl;//output just one letter term or varName or subroutinename or classname
+    }
+    bool terminal = true;
+    TokenType tempType = tokenizer->tokenType();
+
+
+    std::string tempconstant = tokenizer->content();
+
     tokenizer->advance();
+
+
 
     if(std::regex_search(tokenizer->readbuffer(),std::regex(R"(\.)")))
     {
-      for(int i=0;i<3;i++)
-      {
-        outputfile << indent << tokenizer->readbuffer() << std::endl;
-        tokenizer->advance();
-      }
-      compileExpressionList(tokenizer,symbolTable);
 
-      outputfile << indent << tokenizer->readbuffer() << std::endl;
-      tokenizer->advance();
+
+
+
+
+
+
+      terminal = false;
+      if(tempType != IDENTIFIER) std::cout << "compilationError. you use \".\" after something not identifier" << std::endl;
+      for(int i=0;i<3;i++) writeAdvance(tokenizer);
+
+      compileExpressionList(tokenizer,symbolTable,vmwriter);
+
+      writeAdvance(tokenizer);
+
+
+
+
+
+
+
     }
     else if(std::regex_search(tokenizer->readbuffer(),std::regex(R"(\()"))){
 
-      outputfile << indent << tokenizer->readbuffer() << std::endl;
-      tokenizer->advance();
 
-      compileExpressionList(tokenizer,symbolTable);
 
-      outputfile << indent << tokenizer->readbuffer() << std::endl;
-      tokenizer->advance();
+
+
+
+
+
+      terminal = false;
+
+      if(tempType != IDENTIFIER) std::cout << "compilationError. you use \"(\" after something not identifier"<< std::endl;
+
+      writeAdvance(tokenizer);
+      compileExpressionList(tokenizer,symbolTable,vmwriter);
+
+      writeAdvance(tokenizer);
+
+
+
+
+
+
     }
     else if(std::regex_search(tokenizer->readbuffer(),std::regex(R"(\[)")))
     {
 
-      outputfile << indent << tokenizer->readbuffer() << std::endl;
-      tokenizer->advance();
 
-      compileExpression(tokenizer,symbolTable);
 
-      outputfile << indent << tokenizer->readbuffer() << std::endl;
-      tokenizer->advance();
+
+
+
+      terminal = false;
+
+      writeAdvance(tokenizer);
+      compileExpression(tokenizer,symbolTable,vmwriter);
+
+      writeAdvance(tokenizer);
+
+
+
+
+
+
+
+
+
+    }
+
+
+
+    if(terminal){
+
+      vmwriter.writeComment("terminal");
+      if(tempType == INT_CONST) vmwriter.writepush("constant",std::stoi(tempconstant));
+
+      else if(tempType == STRING_CONST){
+        vmwriter.writeCall("String.new",tempconstant.length());
+        vmwriter.writepop("pointer",0);
+        for(int i=0;i<tempconstant.length();i++){
+          char k = tempconstant[i];
+          int j = k;
+          vmwriter.writepush("pointer",0);
+          vmwriter.writepush("constant",j);
+          vmwriter.writeCall("String.appendChar",2);
+
+        }
+      }
+      else if(tempType == IDENTIFIER){
+        std::string segment;
+        if(symbolTable->kindOf(tempconstant) == VAR_K) segment = "local";
+        else if(symbolTable->kindOf(tempconstant) == ARG_K) segment = "argument";
+        else if(symbolTable->kindOf(tempconstant) == STATIC_K) segment = "static";
+        else{
+          segment = "this";
+        }
+
+
+        vmwriter.writepush(segment,symbolTable->indexOf(tempconstant));
+
+      }
+
     }
 
     decreaseIndent();
@@ -1218,8 +1339,7 @@ public:
 
 
 
-int main(int argc,char* argv[])
-{
+int main(int argc,char* argv[]){
   JackTokenizer tokenizer(argv[1]);
   CompilationEngine ce;
   SymbolTable symbolTable;
