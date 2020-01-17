@@ -1,140 +1,111 @@
 function Main.main 1
-//terminal
 push constant 8001
-//terminal
 push constant 16
-//terminal
 push constant 1
 neg
 call Main.fillMemory 3
 pop temp 0
-//terminal
 push constant 8000
 call Memory.peek 1
 pop local 0
-//terminal
 push local 0
 call Main.convert 1
 pop temp 0
+push constant 0
 return
 function Main.convert 3
-//terminal
+push constant 0
+not
 pop local 2
-label _GOTO_0
-//terminal
+label GLABEL0
 push local 2
 if-goto IF_TRUE0
 goto IF_FALSE0
 label IF_TRUE0
-//terminal
 push local 1
-//terminal
 push constant 1
 add
 pop local 1
-//terminal
 push local 0
 call Main.nextMask 1
 pop local 0
-//terminal
 push local 1
-//terminal
 push constant 16
 gt
 not
 if-goto IF_TRUE1
 goto IF_FALSE1
 label IF_TRUE1
-//terminal
-push local 0
-//terminal
+push argument 0
 push local 0
 and
-//terminal
 push constant 0
 eq
 not
 if-goto IF_TRUE2
 goto IF_FALSE2
 label IF_TRUE2
-//terminal
 push constant 8000
-//terminal
 push local 1
 add
-//terminal
 push constant 1
 call Memory.poke 2
 pop temp 0
-goto _GOTO_2
+goto GLABEL2
 label IF_FALSE2
-//terminal
 push constant 8000
-//terminal
 push local 1
 add
-//terminal
 push constant 0
 call Memory.poke 2
 pop temp 0
-goto _GOTO_2
-goto _GOTO_1
+label GLABEL2
+goto GLABEL1
 label IF_FALSE1
-//terminal
+push constant 0
 pop local 2
-goto _GOTO_1
-goto _GOTO_0
+label GLABEL1
+goto GLABEL0
 label IF_FALSE0
+push constant 0
 return
 function Main.nextMask 0
-//terminal
-push local 0
-//terminal
+push argument 0
 push constant 0
 eq
 if-goto IF_TRUE0
 goto IF_FALSE0
 label IF_TRUE0
-//terminal
 push constant 1
 return
-goto _GOTO_0
+goto GLABEL0
 label IF_FALSE0
-//terminal
-push local 0
-//terminal
+push argument 0
 push constant 2
 call Math.multiply 2
 return
-goto _GOTO_0
+label GLABEL0
 function Main.fillMemory 0
-label _GOTO_0
-//terminal
+label GLABEL0
 push argument 1
-//terminal
 push constant 0
 gt
 if-goto IF_TRUE0
 goto IF_FALSE0
 label IF_TRUE0
-//terminal
 push argument 0
-//terminal
-push local 0
+push argument 2
 call Memory.poke 2
 pop temp 0
-//terminal
 push argument 1
-//terminal
 push constant 1
 sub
 pop argument 1
-//terminal
 push argument 0
-//terminal
 push constant 1
 add
 pop argument 0
-goto _GOTO_0
+goto GLABEL0
 label IF_FALSE0
+push constant 0
 return

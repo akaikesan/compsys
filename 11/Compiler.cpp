@@ -42,7 +42,7 @@ static std::regex truekw(R"(true)");
 static std::regex falskw(R"(false)");
 static std::regex nullkw(R"(null)");
 static std::regex thiskw(R"(this)");
-static std::regex kw(R"((class|constructor|function|method|field|static|var|int|char|boolean|void|true|false|null|this|let|do|if|else|while|return)(($|\s)*))");
+static std::regex kw(R"((class|constructor|function|method|field|static|var|int|char|boolean|void|true|false|null|this|let|do|if|else|while|return)(\W+))");
 static std::regex symbRegex(R"(\||~|>|<|&|/|\*|\+|;|,|\.|\)|\(|\]|\[|\}|=|-|\{)");
 static std::regex space(R"(\s+)");
 static std::regex closingbracket(R"(\}|\]|\))");
@@ -136,7 +136,10 @@ private:
 
       else if(std::regex_search(line,m,kw) && (m.str() == line.substr(0,m.str().length()))){
         outputfile << "<keyword>" << m[1].str() << "</keyword>" << std::endl;
+
+        std::string temp = m[2].str();
         line = m.suffix();
+        line.insert(0,temp);
 
       }
 
@@ -319,6 +322,7 @@ public:
   {
     argCounter = 0;
     varCounter = 0;
+
     subroutineSymbolTable.clear();
   }
 
@@ -329,25 +333,37 @@ public:
     if(kind == STATIC_K)
     {
       staticCounter++;
+      classSymbolTable.push_back(SymbolRow(name,type,kind,varCount(kind) - 1));
     }
     else if (kind == FIELD_K)
     {
       fieldCounter++;
+      classSymbolTable.push_back(SymbolRow(name,type,kind,varCount(kind) - 1));
+
     }
     else if (kind == ARG_K)
     {
       argCounter++;
+      subroutineSymbolTable.push_back(SymbolRow(name,type,kind,varCount(kind) - 1));
+
     }
     else if (kind == VAR_K)
     {
       varCounter++;
+      subroutineSymbolTable.push_back(SymbolRow(name,type,kind,varCount(kind) - 1));
+
     }
 
-    classSymbolTable.push_back(SymbolRow(name,type,kind,varCount(kind) - 1));
 
   }
 
+  void showsymbolTable(){
+    std::cout << "class-------------------------------------------" << std::endl;
+    for(auto v : classSymbolTable) std::cout << v.getname() << "," << v.gettype() << "," << v.getkind() << "," << v.getindexNumber() << std::endl;
 
+    std::cout <<  "              method-----------------------------------------------"<<std::endl;
+    for(auto v : subroutineSymbolTable) std::cout << "                            " << v.getname() << "," << v.gettype() << "," << v.getkind() << "," << v.getindexNumber() << std::endl;
+  }
 
   std::vector<SymbolRow> getclassSymbolTable(){
     return classSymbolTable;
@@ -379,7 +395,7 @@ public:
     }
     else
     {
-      std::cout << "compiler Error!" << std::endl;
+      std::cout << "SymbolTable.varCount:  CompilationError! you use undefined variable." << std::endl;
     }
 
 
@@ -404,7 +420,25 @@ public:
     }
   }
 
+  bool there_is(std::string name)
+  {
+    for(auto row : subroutineSymbolTable)
+    {
+      if(row.getname() == name)
+      {
+        return true;
+      }
+    }
 
+    for(auto row : classSymbolTable)
+    {
+      if(row.getname() == name)
+      {
+        return true;
+      }
+    }
+    return false;
+  }
 
 
 
@@ -427,7 +461,7 @@ public:
         return row.getkind();
       }
     }
-
+    std::cout << "SymbolTable.kindOf" +name +  "  :  Compilation Error! you use undefined variable." << std::endl;
   }
 
 
@@ -451,6 +485,7 @@ public:
       }
     }
 
+    std::cout << "SymbolTable.indexOf  :  Compilation Error! you use undefined variable." << std::endl;
   }
 
 
@@ -466,7 +501,7 @@ class VMwriter
 private:
   std::ofstream outputVMfile;
 public:
-  VMwriter(){outputVMfile.open("compiled.vm",std::ios::out | std::ios::ate);}
+  VMwriter(std::string outputfileName){outputVMfile.open(outputfileName,std::ios::out | std::ios::ate);}
 
   void writepush(std::string segment,int index){outputVMfile << "push " << segment << " " << index << std::endl;}
 
@@ -498,7 +533,6 @@ public:
 
   void writeReturn(){outputVMfile << "return" << std::endl;}
 
-  void writeComment(std::string s){outputVMfile << "//" << s << std::endl;}
 
   void close(){outputVMfile.close();}
 };
@@ -510,6 +544,10 @@ class CompilationEngine{
 private:
   std::ofstream outputfile;
   int indentcounter = 0;
+  int true_num = 0;
+  int false_num = 0;
+  int goto_num = 0;
+
   std::string indent = "";
 
   std::string className;
@@ -578,7 +616,8 @@ public:
 
       else
       {
-        std::cout << "Syntaxerror! wrong definition in class" << std::endl;
+        writeAdvance(tokenizer);
+        std::cout << "Syntaxerror! wrong definition in class OR file to be compiled has end line that has letter.\n please put empty line in end of file. " << std::endl;
         break;
       }
     }
@@ -595,18 +634,19 @@ public:
 
 
   void compileSubroutine(JackTokenizer *tokenizer,SymbolTable *symbolTable,VMwriter &vmwriter){
+    symbolTable->startSubroutine();
 
     outputfile << indent << "<subroutineDec>" << std::endl;
     increaseIndent();
     std::string subType;
     std::string methodName;
-
     subType = tokenizer->content();
-    for(int i=0;i<4;i++)
+    writeAdvance(tokenizer);
+
+    for(int i=0;i<3;i++)
     {
-      outputfile << indent << tokenizer->readbuffer() << std::endl;
-      tokenizer->advance();
       if(tokenizer->tokenType() == IDENTIFIER) methodName = tokenizer->content();
+      writeAdvance(tokenizer);
     }
     if(subType == "method")
     {
@@ -638,15 +678,32 @@ public:
       else if(Var_is_uncompiled){
         if(subType == "method"){
           vmwriter.writeFunction(className + "." + methodName,symbolTable->varCount(VAR_K));
+          vmwriter.writepush("argument",0);
+          vmwriter.writepop("pointer",0);
         }
-        else vmwriter.writeFunction(className + "." + methodName,symbolTable->varCount(VAR_K));
+        else if(subType == "constructor"){
+          vmwriter.writeFunction(className + "." + methodName,symbolTable->varCount(VAR_K));
+          vmwriter.writepush("constant",symbolTable->varCount(FIELD_K));
+          if(symbolTable->varCount(FIELD_K) == 0)
+          std::cout << "you defined constructor in class without field." << std::endl
+          << "this constructor must be function. or you forgot to define field." <<std::endl;
+          vmwriter.writeCall("Memory.alloc",1);
+          vmwriter.writepop("pointer",0);
+        }
+        else {
+          vmwriter.writeFunction(className + "." + methodName,symbolTable->varCount(VAR_K));
+        }
+
+
         Var_is_uncompiled = false;
       }
       else if(tokenizer->keyword() == LET
-      || tokenizer->keyword() == IF
-      || tokenizer->keyword() == WHILE
-      || tokenizer->keyword() ==DO
-      || tokenizer->keyword() ==RETURN) compileStatements(tokenizer,symbolTable,vmwriter);
+        || tokenizer->keyword() == IF
+        || tokenizer->keyword() == WHILE
+        || tokenizer->keyword() ==DO
+        || tokenizer->keyword() ==RETURN){
+        compileStatements(tokenizer,symbolTable,vmwriter);
+      }
 
       else{
         std::cout << "Syntaxerror! wrong definition in SubroutineBody" << std::endl;
@@ -659,21 +716,24 @@ public:
 
 
 
+
     outputfile << indent << tokenizer->readbuffer() << std::endl;//output "}"
     tokenizer->advance();
-
     decreaseIndent();
     outputfile << indent << "</subroutineBody>" << std::endl;
     decreaseIndent();
     outputfile << indent << "</subroutineDec>" << std::endl;
 
-    symbolTable->startSubroutine();
+
+    // symbolTable->showsymbolTable();
+    false_num = 0;
+    true_num = 0;
+    goto_num = 0;
 
 
 
 
-
-
+    return;
   }
 
 
@@ -734,30 +794,22 @@ public:
       writeAdvance(tokenizer);//output "["
       compileExpression(tokenizer,symbolTable,vmwriter);
       writeAdvance(tokenizer);//output "]"
-
     }
     std::string segment;
 
 
 
-    if(symbolTable->kindOf(identifier) == FIELD_K) {
-      vmwriter.writepush("pointer",0);
-      vmwriter.writepush("constant",symbolTable->indexOf(identifier));
+
+
+    if(symbolTable->kindOf(identifier) == VAR_K) segment = "local";
+    else if(symbolTable->kindOf(identifier) == ARG_K) segment = "argument";
+    else if(symbolTable->kindOf(identifier) == STATIC_K) segment = "static";
+    else if (symbolTable->kindOf(identifier) == FIELD_K) segment = "this";
+    if(is_array){
+      vmwriter.writepush(segment,symbolTable->indexOf(identifier));
       vmwriter.writeArithmetic(ADD);
-      if(is_array) vmwriter.writeArithmetic(ADD);
-      vmwriter.writepop("pointer",1);
+      vmwriter.writepop("temp",1);
 
-    }else{
-
-
-      if(symbolTable->kindOf(identifier) == VAR_K) segment = "local";
-      else if(symbolTable->kindOf(identifier) == ARG_K) segment = "argument";
-      else if(symbolTable->kindOf(identifier) == STATIC_K) segment = "static";
-      if(is_array){
-        vmwriter.writepush(segment,symbolTable->indexOf(identifier));
-        vmwriter.writeArithmetic(ADD);
-        vmwriter.writepop("pointer",0);
-      }
     }
 
 
@@ -778,8 +830,11 @@ public:
     outputfile << indent << "</letStatement>" << std::endl;
 
 
-    if(symbolTable->kindOf(identifier) == FIELD_K) vmwriter.writepop("that",0);
-    else if(is_array) vmwriter.writepop("that",0);
+    if(is_array) {
+      vmwriter.writepush("temp",1);
+      vmwriter.writepop("pointer",1);
+      vmwriter.writepop("that",0);
+    }
     else vmwriter.writepop(segment,symbolTable->indexOf(identifier));
     return;
 
@@ -792,31 +847,59 @@ public:
   {
     outputfile << indent << "<doStatement>" << std::endl;
     increaseIndent();
-    for(int i=0;i<2;i++)
-    {
-      writeAdvance(tokenizer);
-    }
+    writeAdvance(tokenizer);//output do
+
+    std::string tempName = tokenizer->content();
+
+    int nArgs = 0;
+
+    writeAdvance(tokenizer);//output identifier
+
 
     if(std::regex_search(tokenizer->readbuffer(),std::regex(R"(\.)")))
     {
-      for(int i=0;i<3;i++)
-      {
-        writeAdvance(tokenizer);//output .subroutinName(
+      writeAdvance(tokenizer);//output .
+      if(symbolTable->there_is(tempName)){
+        std::string segment;
+        nArgs++;
+        if(symbolTable->kindOf(tempName) == STATIC_K)segment = "static";
+        else if(symbolTable->kindOf(tempName) == FIELD_K) segment = "this";
+        else if(symbolTable->kindOf(tempName) == ARG_K) segment = "argument";
+        else if(symbolTable->kindOf(tempName) == VAR_K) segment = "local";
+
+        vmwriter.writepush(segment,symbolTable->indexOf(tempName));
+
+        tempName = symbolTable->typeOf(tempName) + "." + tokenizer->content();
       }
-      compileExpressionList(tokenizer,symbolTable,vmwriter);
+      else {
+
+        tempName += "." +  tokenizer->content();
+      }
+      for(int i=0;i<2;i++) writeAdvance(tokenizer);//output subroutinName(
+
+      nArgs += compileExpressionList(tokenizer,symbolTable,vmwriter);
 
       writeAdvance(tokenizer);//output )
     }
-    else if(std::regex_search(tokenizer->readbuffer(),std::regex(R"(\()"))){
+    else if(std::regex_search(tokenizer->readbuffer(),std::regex(R"(\()")))
+    {
+
+      nArgs++;
+      tempName = className + "." +  tempName;
+      vmwriter.writepush("pointer",0);
 
       writeAdvance(tokenizer);//output (
 
-      compileExpressionList(tokenizer,symbolTable,vmwriter);
+      nArgs += compileExpressionList(tokenizer,symbolTable,vmwriter);
 
       writeAdvance(tokenizer);//output )
     }
 
     writeAdvance(tokenizer); //output ;
+
+    vmwriter.writeCall(tempName,nArgs);
+
+    vmwriter.writepop("temp",0);
 
     decreaseIndent();
     outputfile << indent << "</doStatement>" << std::endl;
@@ -828,6 +911,12 @@ public:
 
   void compileWhile(JackTokenizer *tokenizer,SymbolTable *symbolTable,VMwriter &vmwriter)
   {
+    int t = true_num;
+    int f = false_num;
+    int go = goto_num;
+    true_num++;
+    goto_num++;
+    false_num++;
     outputfile << indent << "<whileStatement>" << std::endl;
     increaseIndent();
     for(int i=0;i<2;i++)
@@ -835,7 +924,12 @@ public:
       outputfile << indent << tokenizer->readbuffer() << std::endl;//output "("
       tokenizer->advance();
     }
+    vmwriter.writeLabel("GLABEL" + std::to_string(go));
     compileExpression(tokenizer,symbolTable,vmwriter);
+    vmwriter.writeIf("IF_TRUE" + std::to_string(t));
+    vmwriter.writeGoto("IF_FALSE" + std::to_string(f));
+    vmwriter.writeLabel("IF_TRUE" + std::to_string(t));
+
 
     for(int i=0;i<2;i++)
     {
@@ -844,6 +938,9 @@ public:
     }
 
     compileStatements(tokenizer,symbolTable,vmwriter);
+
+    vmwriter.writeGoto("GLABEL" + std::to_string(go));
+    vmwriter.writeLabel("IF_FALSE"+ std::to_string(f));
 
     outputfile << indent << tokenizer->readbuffer() << std::endl;//output "}"
     tokenizer->advance();
@@ -861,6 +958,12 @@ public:
 
   void compileIf(JackTokenizer *tokenizer,SymbolTable *symbolTable,VMwriter &vmwriter)
   {
+    int t = true_num;
+    int f = false_num;
+    int go = goto_num;
+    true_num++;
+    goto_num++;
+    false_num++;
     outputfile << indent << "<ifStatement>" << std::endl;
     increaseIndent();
 
@@ -877,7 +980,9 @@ public:
       outputfile << indent << tokenizer->readbuffer() << std::endl;//output ")" "{"
       tokenizer->advance();
     }
-
+    vmwriter.writeIf("IF_TRUE" + std::to_string(t));
+    vmwriter.writeGoto("IF_FALSE" + std::to_string(f));
+    vmwriter.writeLabel("IF_TRUE" + std::to_string(t));
     compileStatements(tokenizer,symbolTable,vmwriter);//statements
 
     outputfile << indent << tokenizer->readbuffer() << std::endl;//output "}"
@@ -885,6 +990,8 @@ public:
 
     if(std::regex_search(tokenizer->readbuffer(),std::regex(R"(else)")))
     {
+      vmwriter.writeGoto("GLABEL" + std::to_string(go));
+      vmwriter.writeLabel("IF_FALSE" + std::to_string(f));
       for(int i=0;i<2;i++)
       {
         outputfile << indent << tokenizer->readbuffer() << std::endl;//output "else" "{"
@@ -895,6 +1002,10 @@ public:
 
       outputfile << indent << tokenizer->readbuffer() << std::endl;//output "}"
       tokenizer->advance();
+      vmwriter.writeLabel("GLABEL" + std::to_string(go));
+    }
+    else{
+      vmwriter.writeLabel("IF_FALSE" + std::to_string(f));
     }
 
 
@@ -914,7 +1025,9 @@ public:
     writeAdvance(tokenizer);//output "return"
 
     if(tokenizer->readbuffer() != "<symbol>;</symbol>") compileExpression(tokenizer,symbolTable,vmwriter);
-
+    else {
+      vmwriter.writepush("constant",0);
+    }
     writeAdvance(tokenizer);//output ";"
 
     decreaseIndent();
@@ -961,9 +1074,9 @@ public:
         if(symboltemp == "+") symbol.push_back(ADD);
         else if(symboltemp == "-") symbol.push_back(SUB);
         else if(symboltemp == "=") symbol.push_back(EQ);
-        else if(symboltemp == "&lt") symbol.push_back(LT);
-        else if(symboltemp == "&gt") symbol.push_back(GT);
-        else if(symboltemp == "&amp") symbol.push_back(AND);
+        else if(symboltemp == "&lt;") symbol.push_back(LT);
+        else if(symboltemp == "&gt;") symbol.push_back(GT);
+        else if(symboltemp == "&amp;") symbol.push_back(AND);
         else if(symboltemp == "|") symbol.push_back(OR);
         else if(symboltemp == "-") symbol.push_back(NEG);
         else if(symboltemp == "~") symbol.push_back(NOT);
@@ -1137,14 +1250,15 @@ public:
 
 
 
-  void compileExpressionList(JackTokenizer *tokenizer,SymbolTable *symbolTable,VMwriter &vmwriter){
+  int compileExpressionList(JackTokenizer *tokenizer,SymbolTable *symbolTable,VMwriter &vmwriter){
     outputfile << indent << "<expressionList>" << std::endl;
-
+    int counter = 0;
     increaseIndent();
 
     while (!std::regex_search(tokenizer->readbuffer(),std::regex(R"(\))")))
     {
       compileExpression(tokenizer,symbolTable,vmwriter);
+      counter++;
       if(std::regex_search(tokenizer->readbuffer(),std::regex(R"(,)"))){
         outputfile << indent << tokenizer->readbuffer() << std::endl;
         tokenizer->advance();
@@ -1153,6 +1267,8 @@ public:
     }
     decreaseIndent();
     outputfile << indent << "</expressionList>" << std::endl;
+
+    return counter;
   }
 
 
@@ -1206,7 +1322,8 @@ public:
 
 
     else {
-      outputfile << indent << tokenizer->readbuffer() << std::endl;//output just one letter term or varName or subroutinename or classname
+      outputfile << indent << tokenizer->readbuffer() << std::endl;
+      //output just one letter term or varName or subroutinename or classname
     }
     bool terminal = true;
     TokenType tempType = tokenizer->tokenType();
@@ -1220,18 +1337,36 @@ public:
 
     if(std::regex_search(tokenizer->readbuffer(),std::regex(R"(\.)")))
     {
-
-
-
-
-
-
-
+      KeyWord kw;
       terminal = false;
       if(tempType != IDENTIFIER) std::cout << "compilationError. you use \".\" after something not identifier" << std::endl;
-      for(int i=0;i<3;i++) writeAdvance(tokenizer);
+      std::string TypeName;
 
-      compileExpressionList(tokenizer,symbolTable,vmwriter);
+      if(symbolTable->there_is(tempconstant)){
+        kw = METHOD;
+        TypeName = symbolTable->typeOf(tempconstant);
+        std::string segment;
+        if(symbolTable->kindOf(tempconstant) == STATIC_K)segment = "static";
+        else if(symbolTable->kindOf(tempconstant) == FIELD_K) segment = "this";
+        else if(symbolTable->kindOf(tempconstant) == ARG_K) segment = "argument";
+        else if(symbolTable->kindOf(tempconstant) == VAR_K) segment = "local";
+
+
+        vmwriter.writepush(segment,symbolTable->indexOf(tempconstant));
+      }
+
+      writeAdvance(tokenizer);//output .
+
+      std::string subName = tokenizer->content();
+
+      for(int i=0;i<2;i++) writeAdvance(tokenizer);//output "methodName ("
+
+
+      int nArgs = compileExpressionList(tokenizer,symbolTable,vmwriter);
+
+
+      if(kw == METHOD) vmwriter.writeCall(TypeName + "." + subName,nArgs + 1);
+      else vmwriter.writeCall(tempconstant + "." + subName,nArgs);
 
       writeAdvance(tokenizer);
 
@@ -1247,17 +1382,15 @@ public:
 
 
 
-
-
-
-
       terminal = false;
 
       if(tempType != IDENTIFIER) std::cout << "compilationError. you use \"(\" after something not identifier"<< std::endl;
+      vmwriter.writepush("pointer",0); // address of object of parent method (this 0 is the field variable of the object)
+      writeAdvance(tokenizer); //output(
+      int nArgs = compileExpressionList(tokenizer,symbolTable,vmwriter);
 
-      writeAdvance(tokenizer);
-      compileExpressionList(tokenizer,symbolTable,vmwriter);
 
+      vmwriter.writeCall(className + "." + tempconstant,nArgs + 1);
       writeAdvance(tokenizer);
 
 
@@ -1275,10 +1408,18 @@ public:
 
 
       terminal = false;
+      std::string segment;
+      if(symbolTable->kindOf(tempconstant) == VAR_K) segment = "local";
+      else if(symbolTable->kindOf(tempconstant) == ARG_K) segment = "argument";
+      else if(symbolTable->kindOf(tempconstant) == STATIC_K) segment = "static";
+      else if(symbolTable->kindOf(tempconstant) == FIELD_K) segment = "this";
 
+      vmwriter.writepush(segment,symbolTable->indexOf(tempconstant));
       writeAdvance(tokenizer);
       compileExpression(tokenizer,symbolTable,vmwriter);
-
+      vmwriter.writeArithmetic(ADD);
+      vmwriter.writepop("pointer",1);
+      vmwriter.writepush("that",0);
       writeAdvance(tokenizer);
 
 
@@ -1295,16 +1436,14 @@ public:
 
     if(terminal){
 
-      vmwriter.writeComment("terminal");
       if(tempType == INT_CONST) vmwriter.writepush("constant",std::stoi(tempconstant));
 
       else if(tempType == STRING_CONST){
-        vmwriter.writeCall("String.new",tempconstant.length());
-        vmwriter.writepop("pointer",0);
+        vmwriter.writepush("constant",tempconstant.length());
+        vmwriter.writeCall("String.new",1);
         for(int i=0;i<tempconstant.length();i++){
           char k = tempconstant[i];
           int j = k;
-          vmwriter.writepush("pointer",0);
           vmwriter.writepush("constant",j);
           vmwriter.writeCall("String.appendChar",2);
 
@@ -1315,13 +1454,23 @@ public:
         if(symbolTable->kindOf(tempconstant) == VAR_K) segment = "local";
         else if(symbolTable->kindOf(tempconstant) == ARG_K) segment = "argument";
         else if(symbolTable->kindOf(tempconstant) == STATIC_K) segment = "static";
-        else{
+        else if(symbolTable->kindOf(tempconstant) == FIELD_K){
           segment = "this";
         }
 
 
         vmwriter.writepush(segment,symbolTable->indexOf(tempconstant));
 
+      }
+      else if(tempconstant == "this"){
+        vmwriter.writepush("pointer",0);
+      }
+      else if(tempconstant == "true"){
+        vmwriter.writepush("constant",0);
+        vmwriter.writeArithmetic(NOT);
+      }
+      else if(tempconstant == "false"|| tempconstant == "null"){
+        vmwriter.writepush("constant",0);
       }
 
     }
@@ -1340,10 +1489,15 @@ public:
 
 
 int main(int argc,char* argv[]){
+  std::smatch m;
+  std::string s = argv[1];
+  bool is_jackfile = std::regex_search(s,m,std::regex(R"((.*)(\.jack))")); //    if (std::regex_search(line,commentout)) line = std::regex_replace(line,commentout,"");
+
+
   JackTokenizer tokenizer(argv[1]);
   CompilationEngine ce;
   SymbolTable symbolTable;
-  VMwriter vmwriter;
+  VMwriter vmwriter(m[1].str() + ".vm");
 
   while(tokenizer.hasMoreTokens())
   {
@@ -1353,10 +1507,7 @@ int main(int argc,char* argv[]){
     }
 
   }
-/*
-  std::vector<SymbolRow> table = symbolTable.getclassSymbolTable();
 
-  for(auto v:table) std::cout << v.getname() << "," << v.gettype() << "," << v.getkind() << "," << v.getindexNumber() << std::endl;
-*/
+
   return 0;
 }

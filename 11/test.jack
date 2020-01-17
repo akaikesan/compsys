@@ -1,8 +1,0 @@
-class Main
-{
-  field string a;
-  method int yay ()
-  {
-    let a = String.new(2);
-  }
-}
