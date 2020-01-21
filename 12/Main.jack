@@ -2,18 +2,18 @@ class Main{
 	
 	function void main(){
 		
-		var int seg,seg2,seg3;
+		var Array seg,seg2,seg3;
 
-		let seg = Memory.alloc(900);
+		let seg = Array.new(900);
 		
-		let seg2 = Memory.alloc(900);	
+		let seg2 = Array.new(900);	
 
-		let seg3 = Memory.alloc(12000);
+		let seg3 = Array.new(12000);
 
-		do Memory.deAlloc(seg2);
-		do Memory.deAlloc(seg);
-		
-		let seg = Memory.alloc(1800);
+		do seg.dispose();
+		do seg2.dispose();
+
+		let seg = Array.new(1800);
 		
 		return;
 
