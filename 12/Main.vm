@@ -1,0 +1,21 @@
+function Main.main 3
+push constant 900
+call Memory.alloc 1
+pop local 0
+push constant 900
+call Memory.alloc 1
+pop local 1
+push constant 12000
+call Memory.alloc 1
+pop local 2
+push local 1
+call Memory.deAlloc 1
+pop temp 0
+push local 0
+call Memory.deAlloc 1
+pop temp 0
+push constant 1800
+call Memory.alloc 1
+pop local 0
+push constant 0
+return

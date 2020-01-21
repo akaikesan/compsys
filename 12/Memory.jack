@@ -1,0 +1,291 @@
+class Memory{
+
+
+
+	static Array FreeList;
+	static Array memory;
+	static int INDEX_LENGTH;
+	static int INDEX_NEXT;
+	static int END_OF_STACK;
+	static int MAX_SIZE;
+
+
+
+
+
+
+	function void init(){
+		let FreeList = 2048;
+		let memory = 0;
+		let INDEX_LENGTH = 0;
+		let INDEX_NEXT = 1;
+		let END_OF_STACK = 16383;
+		let MAX_SIZE = 16383 - 2048 + 1;
+		let FreeList[0] = 16383 - 2048 + 1; //FreeList[0] = END_OF_STACK - FreeList + 1
+		let FreeList[1] = null;		//initialize FreeList.
+		return;	
+	}
+
+
+
+
+
+
+	function int peek(int address){
+		return memory[address];
+	}
+
+
+
+
+
+
+
+
+	function void poke(int address, int value){
+		let memory[address] = value;
+		return;
+	}
+
+
+
+
+
+
+
+
+
+
+
+
+	function Array alloc(int size){
+
+
+		var Array prev_best_segment;
+		var Array nextSegment;
+		var Array bestSegment;
+
+		let prev_best_segment = Memory.beforeBestFitSearch(size);
+		
+		if(prev_best_segment = END_OF_STACK){ 
+			
+			do Memory.defrag();
+			let prev_best_segment = Memory.beforeBestFitSearch(size);
+			
+			if(prev_best_segment = END_OF_STACK){ 
+				do Sys.error(6);
+				return null;
+			}
+		}
+		
+		//prev_best_segment[INDEX_NEXT] returns base of best_segment.
+		if (prev_best_segment = null){//when the first segment is alloced.
+	
+			let prev_best_segment = null;
+			let bestSegment = FreeList;
+
+			let nextSegment = Memory.allocAndgetNext(size,prev_best_segment);
+
+			let FreeList = nextSegment;
+
+			return bestSegment + 1;
+		}
+		
+
+
+		let bestSegment = prev_best_segment[INDEX_NEXT];//bestSegment is set before
+								//prev_best_segment[INDEX_NEXT]
+								//is overrode.
+
+		let nextSegment = Memory.allocAndgetNext(size,prev_best_segment);
+		let prev_best_segment[INDEX_NEXT] = nextSegment;
+
+		return bestSegment + 1;
+	}
+
+
+
+
+
+
+
+	function void defrag(){
+		
+		var Array currentSegment;
+		var Array nextSegment;
+
+		let currentSegment = FreeList;
+		let nextSegment = FreeList[INDEX_NEXT];
+		
+
+		while(~(nextSegment = null)){
+
+			if((nextSegment) = (currentSegment + currentSegment[INDEX_LENGTH])){
+
+				let currentSegment[INDEX_NEXT] = nextSegment[INDEX_NEXT];
+				let currentSegment[INDEX_LENGTH] = currentSegment[INDEX_LENGTH] + nextSegment[INDEX_LENGTH];
+				let nextSegment = currentSegment;
+			}
+			
+			
+			let currentSegment = nextSegment;
+			let nextSegment = currentSegment[INDEX_NEXT];
+		}
+
+		return;
+
+	}
+	
+
+
+
+
+
+	function void deAlloc(Array o){
+
+		var Array currentSegment;
+		var Array nextSegment;
+		var Array prevSegment;
+		
+		let currentSegment = FreeList;
+		let nextSegment = FreeList[INDEX_NEXT]; 
+		let prevSegment = null;
+
+		let o = o - 1;
+		
+
+		while(currentSegment < o){
+
+			let prevSegment = currentSegment;
+			let currentSegment = nextSegment;
+			let nextSegment = currentSegment[INDEX_NEXT];
+
+		}
+
+
+		if(prevSegment = null){ let FreeList = o; }
+		else{ let prevSegment[INDEX_NEXT] = o; }
+		
+		let o[INDEX_NEXT] = currentSegment;
+		
+		return;
+
+	}
+	
+	
+
+
+
+
+
+
+
+
+
+
+	function int allocAndgetNext(int size, Array prev_best_segment){
+		
+		//prev_best_segment may be null.
+
+		var Array this_segment;
+		var Array next_segment;
+
+		let this_segment = Memory.getNextSegment(prev_best_segment); 
+
+
+		if(this_segment[INDEX_LENGTH] > (size + 1 + 2)){ //Array has 2 field.
+								//3 field is needed to make
+			let next_segment = this_segment + size + 1; //next_segment is extra segment.
+			let next_segment[INDEX_LENGTH] = this_segment[INDEX_LENGTH] - (size + 1);
+
+			let this_segment[INDEX_LENGTH] = size + 1;
+
+			let next_segment[INDEX_NEXT] = this_segment[INDEX_NEXT];
+			
+		}else{// when there is no more than 2 field extra.
+			
+			let next_segment = this_segment[INDEX_NEXT];
+
+		}
+		
+		return next_segment;
+	
+	}
+
+
+
+
+
+
+
+
+
+
+
+	function int getNextSegment(Array segment){
+
+		if(segment = null){
+			return FreeList;
+		}else{
+			return segment[INDEX_NEXT];
+		}
+
+	}
+
+
+
+
+
+
+
+
+
+
+	//this function get base-address of the segment that has 
+	//as many memory as the size.
+
+	function int beforeBestFitSearch(int size)
+	{		
+		var int bestFitSize,currentLength,best_FreeList;
+
+		var Array current_FreeList;
+		var Array prev_FreeList;
+		var Array prev_best_FreeList;
+
+
+
+		let bestFitSize =  MAX_SIZE + 1;  	//if current segment is larger memory
+		let current_FreeList = FreeList;  	//for the first time in the loop,
+		let best_FreeList = END_OF_STACK; 	//bestFitSize must be larger than any curLength.
+		let prev_FreeList = null;
+		let prev_best_FreeList = END_OF_STACK;
+
+
+
+		while(~(current_FreeList = null)){ 	//current means "current List".
+
+
+			let currentLength = current_FreeList[INDEX_LENGTH];
+
+
+			//(currentLength >= size + 1) && (currentLength < bestFitSize)
+
+			if((currentLength > size) & (currentLength < bestFitSize)){ 
+				let prev_best_FreeList = prev_FreeList;
+				let bestFitSize = currentLength;
+				let best_FreeList = current_FreeList;
+			}
+
+
+			let prev_FreeList = current_FreeList;
+
+			let current_FreeList = current_FreeList[INDEX_NEXT];
+		}
+
+		return prev_best_FreeList; 
+	}
+
+
+
+}
+
