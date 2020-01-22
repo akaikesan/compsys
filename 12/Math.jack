@@ -1,0 +1,149 @@
+class Math{
+	
+	static Array twoTothe;
+
+
+	
+	function void init(){
+		let twoTothe = Array.new(16);	
+		do Math.init_Bit(1,0);
+		return;
+	}
+
+	function void init_Bit(int t, int i){
+		if( i > 14 ) {return;}
+		let twoTothe[i] = t;
+		let t = t + t;
+		let i = i + 1;	
+		do Math.init_Bit(t,i);
+		return;
+	}
+		
+	
+	function int abs(int x){
+		if (x < 0){return -x;}
+		
+		return x;
+	}
+	
+	function int multiply(int x, int y){
+		
+		var int i;
+		var int ans;
+
+		let i = 0;		
+		let ans = 0;
+
+		while(i < 14) {
+			if(Math.bit(y,i)){
+				let ans = ans + x ;
+			}
+			let x = x + x;
+			let i = i + 1;
+		}
+		
+		return ans;
+	}
+	
+	function bool bit(int x, int j){
+	
+		var int i;
+		var bool b;
+
+		let i = 13;
+		let x = Math.abs(x);
+
+		while( i > (j - 1)){
+			if((x + 1) > twoTothe[i]){
+				let x = x - twoTothe[i];
+				let b = true;
+			}
+			else{ let b = false;}
+			let i = i - 1;
+
+		}
+
+		
+		return b;
+	}
+
+	function int divide(int x, int y){
+		var bool is_minus;
+		var int t;
+
+		let is_minus = false;
+
+		if(Math.xor(x < 0, y < 0)){
+			let is_minus = true;
+		}
+		
+		let x = Math.abs(x);
+		let y = Math.abs(y);
+
+		let t = Math.divide_algorithm(x,y);
+		if(is_minus){
+			return -t;
+		}
+		return t;
+	}
+
+	function bool xor(bool a, bool b){
+		var bool c,d;
+		let c = a & b;
+		let c = ~c;
+
+		let a = ~a;
+		let b = ~b;
+
+		let d = a & b;
+		let d = ~d;
+
+		return c & d;
+	}
+	
+	function int divide_algorithm(int x, int y){	
+
+		var int q;
+
+		
+		if ( y > x  ){ return 0;}
+		if( y = 16384){ let q = 0;}
+		else{ let q = Math.divide_algorithm(x, 2 * y);}
+
+			    
+		if((x - (2*q*y)) < y){ 
+			return 2*q; 
+		}	
+
+		else{ return (2*q + 1); }
+	}
+
+	
+	function int min(int x, int y){
+		if(x > y){ return y;}
+		else { return x;}
+	}
+
+	function int max(int x,int y){
+		if(x < y){ return y;}
+		else { return x;}
+	}
+
+	function int sqrt(int x){
+		var int y;
+		var int j;
+		var int temp;
+		let y = 0;
+		let j = x / 2;
+		
+		if(j > 13){let j = 13;}
+
+		while(j > -1){
+			let temp = ((y + twoTothe[j]) * (y + twoTothe[j]));
+			if ((~(temp > x)) & (temp > 0) ){ let y = y + twoTothe[j];}	
+
+			let j = j - 1;	
+		}
+		return y;
+	}
+}
