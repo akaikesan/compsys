@@ -2,8 +2,22 @@ class Main{
 	
 	function void main(){
 		
-		do Output.printInt(16384 * 2);
+		var String str;
+		let str = String.new(2);
+		do str.appendChar(97);
 		
+		do str.appendChar(97);
+
+		do Output.printString(str);
+		
+		do Output.println();
+
+		do Output.printInt(str.length());
+
+		do Output.println();
+
+		do Output.printString(str.charAt(2));	
+
 		return;
 
 	}
