@@ -48,7 +48,7 @@ class Sys {
 			}
 		}
 		
-		do Output.printString("hello");
+
 
 		return;
 		
