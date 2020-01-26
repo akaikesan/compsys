@@ -1,0 +1,193 @@
+// This file is part of www.nand2tetris.org
+// and the book "The Elements of Computing Systems"
+// by Nisan and Schocken, MIT Press.
+// File name: projects/12/Screen.jack
+
+/**
+ * A library of functions for displaying graphics on the screen.
+ * The Hack physical screen consists of 512 rows (indexed 0..511, top to bottom)
+ * of 256 pixels each (indexed 0..255, left to right). The top left pixel on 
+ * the screen is indexed (0,0).
+ */
+class Screen {
+
+
+	static Array twoTothe;
+	static bool falseWtrueB;
+
+
+
+
+    /** Initializes the Screen. */
+    function void init() {
+		let falseWtrueB = true;
+		let twoTothe = Array.new(16);
+		let twoTothe[0] = 1;
+		do Screen.init_twoTothe(1);
+		return;
+
+    }
+
+	//this functions is used in only init().
+	function void init_twoTothe(int up){
+
+		if(up > 15){return;}
+		let twoTothe[up] = twoTothe[up-1] * 2;
+		do Screen.init_twoTothe(up + 1);
+
+		return;
+	}
+	
+
+    /** Erases the entire screen. */
+    function void clearScreen() {
+		return;
+    }
+
+    /** Sets the current color, to be used for all subsequent drawXXX commands.
+     *  Black is represented by true, white by false. */
+    function void setColor(boolean b) {
+		let falseWtrueB = b;
+		return;
+    }
+
+    /** Draws the (x,y) pixel, using the current color. */
+ 
+    function void drawPixel(int x, int y) {
+	
+		var int x_mod16;
+		var int address;
+		let x_mod16 = x - ((x/16) * 16);
+		let address = 16384 + (y*32) + (x/16);
+		
+		if(falseWtrueB){do Memory.poke(address, (Memory.peek(address) | (twoTothe[x_mod16])));	}
+		else{do Memory.poke(address, (Memory.peek(address) & (~twoTothe[x_mod16]))); }
+
+		return;
+    }
+
+    /** Draws a line from pixel (x1,y1) to pixel (x2,y2), using the current color. */
+    function void drawLine(int x1, int y1, int x2, int y2) {
+
+		var int dx, dy;
+		var int a, b;
+		var int adyminusbdy;
+		var int x_increment;
+		var int y_increment;
+		var int limit_when_equal;
+
+		let dx = x2 - x1;
+		let dy = y2 - y1;
+
+		if(dx = 0){
+				
+			if(dy < 0){
+				let y_increment = -1;
+			}else{
+				let y_increment = 1;
+			}
+
+			while (~(Math.abs(y2 - y1) = 0)){
+				do Screen.drawPixel(x1,y1);
+				let y1 = y1 + y_increment;
+			}
+
+			return;
+		}
+
+		if(dy = 0){
+
+			if(dx < 0){
+				let x_increment = -1;
+			}else{
+				let x_increment = 1;
+			}
+
+			while (~(Math.abs(x2 - x1) = 0)){
+				do Screen.drawPixel(x1,y1);
+				let x1 = x1 + x_increment;
+			}
+
+
+			return;
+		}
+
+
+		if ((dx > 0) & (dy > 0)){
+
+			let x_increment = 1;
+			let y_increment = 1;
+		}
+		if ((dx < 0) & (dy > 0)){
+			let dx = -dx;
+
+			let x_increment = -1;
+			let y_increment = 1;
+		}
+		if ((dx < 0) & (dy < 0)){
+			let dx = -dx;
+			let dy = -dy;
+
+			let x_increment = -1;
+			let y_increment = -1;
+		}
+		if ((dx > 0) & (dy < 0)){
+			let dy = -dy;
+
+			let x_increment = 1;
+			let y_increment = -1;
+		}
+
+
+		let a = 0;
+		let b = 0;
+		
+		let adyminusbdy = 0;
+		
+		while((~(Math.abs(a) > dx)) & (~(Math.abs(b) > dy))){
+			do Screen.drawPixel(x1 + a, y1 + b);
+			
+			if(adyminusbdy < 0){
+				let a = a + x_increment;
+				let adyminusbdy = adyminusbdy + dy;
+			}else{
+				let b = b + y_increment;
+				let adyminusbdy = adyminusbdy - dx;
+			}
+		}
+		return;
+    }
+
+    /** Draws a filled rectangle whose top left corner is (x1, y1)
+     * and bottom right corner is (x2,y2), using the current color. */
+    function void drawRectangle(int x1, int y1, int x2, int y2) {
+
+		while(~(y2 < y1)){//y2 >= y1
+			do Screen.drawLine(x1,y1,x2,y1);
+			let y1 = y1 + 1;
+		}
+	    
+		return;
+    }
+
+    /** Draws a filled circle of radius r<=181 around (x,y), using the current color. */
+    function void drawCircle(int x, int y, int r) {
+		var int dy;
+		var int rt;
+
+
+		let dy = -r;
+
+		if(r > 181) {let r = 181;}
+
+		while(~(dy > r)){
+
+			let rt = Math.sqrt((r*r) - (dy*dy));
+			do Screen.drawLine(x - rt, y + dy, x + rt, y + dy);
+			let dy = dy + 1;
+
+		}
+
+		return;
+    }
+}
